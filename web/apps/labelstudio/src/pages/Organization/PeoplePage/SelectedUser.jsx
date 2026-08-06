@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { IconCross } from "@humansignal/icons";
 import { Userpic, Button, Select, Badge } from "@humansignal/ui";
@@ -39,6 +39,11 @@ export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole }) =
   const user = member?.user;
   const [role, setRole] = useState(member?.role || "annotator");
   const [saving, setSaving] = useState(false);
+
+  // 当切换用户时，同步更新 role 状态
+  useEffect(() => {
+    setRole(member?.role || "annotator");
+  }, [member?.user?.id]);
 
   const fullName = [user?.first_name, user?.last_name]
     .filter((n) => !!n)

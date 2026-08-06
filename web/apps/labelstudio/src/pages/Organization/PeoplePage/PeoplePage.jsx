@@ -24,6 +24,7 @@ export const PeoplePage = () => {
   const { user } = useAuth();
   const [selectedMember, setSelectedMember] = useState(null);
   const [invitationOpen, setInvitationOpen] = useState(false);
+  const [listRefreshKey, setListRefreshKey] = useState(0);
   const canInviteMembers = Boolean(user?.is_superuser);
 
   // Check if current user can modify roles (superuser or owner)
@@ -70,6 +71,7 @@ export const PeoplePage = () => {
         });
 
         selectMember(response.response);
+        setListRefreshKey((k) => k + 1);
 
         toast.show({ message: "User role updated successfully" });
 
@@ -120,6 +122,7 @@ export const PeoplePage = () => {
           selectedMember={selectedMember}
           defaultSelected={defaultSelected}
           onSelect={(member) => selectMember(member)}
+          refreshKey={listRefreshKey}
         />
 
         {selectedMember ? (

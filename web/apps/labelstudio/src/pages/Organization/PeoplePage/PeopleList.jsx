@@ -21,7 +21,7 @@ const ROLE_LABELS = {
   reviewer: "Reviewer",
 };
 
-export const PeopleList = ({ onSelect, selectedMember, defaultSelected }) => {
+export const PeopleList = ({ onSelect, selectedMember, defaultSelected, refreshKey }) => {
   const api = useAPI();
   const [usersList, setUsersList] = useState();
   const [currentPage] = usePage("page", 1);
@@ -57,7 +57,7 @@ export const PeopleList = ({ onSelect, selectedMember, defaultSelected }) => {
 
   useEffect(() => {
     fetchUsers(currentPage, currentPageSize);
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     if (isDefined(defaultSelected) && usersList) {

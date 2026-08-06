@@ -36,31 +36,12 @@ export const MembershipInfo = () => {
 
       const annotationCount = response?.annotations_count;
       const contributions = response?.contributed_projects_count;
-      let role = "Owner";
-
-      switch (response.role) {
-        case "OW":
-          role = "Owner";
-          break;
-        case "DI":
-          role = "Deactivated";
-          break;
-        case "AD":
-          role = "Administrator";
-          break;
-        case "MA":
-          role = "Manager";
-          break;
-        case "AN":
-          role = "Annotator";
-          break;
-        case "RE":
-          role = "Reviewer";
-          break;
-        case "NO":
-          role = "Pending";
-          break;
-      }
+      const roleMap: Record<string, string> = {
+        owner: "Owner",
+        annotator: "Annotator",
+        reviewer: "Reviewer",
+      };
+      let role = roleMap[response.role] || "Member";
 
       return {
         annotationCount,
