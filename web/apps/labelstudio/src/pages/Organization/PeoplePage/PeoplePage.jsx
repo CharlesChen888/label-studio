@@ -1,6 +1,7 @@
 import { Button } from "@humansignal/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useUpdatePageTitle } from "@humansignal/core";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { HeidiTips } from "../../../components/HeidiTips/HeidiTips";
 import { modal } from "../../../components/Modal/Modal";
 import { Space } from "../../../components/Space/Space";
@@ -18,8 +19,10 @@ import { SelectedUser } from "./SelectedUser";
 export const PeoplePage = () => {
   const apiSettingsModal = useRef();
   const toast = useToast();
+  const { user } = useAuth();
   const [selectedUser, setSelectedUser] = useState(null);
   const [invitationOpen, setInvitationOpen] = useState(false);
+  const canInviteMembers = Boolean(user?.is_superuser);
 
   useUpdatePageTitle("People");
 
@@ -69,13 +72,15 @@ export const PeoplePage = () => {
                 API Tokens Settings
               </Button>
             )}
-            <Button
-              leading={<IconPlus className="!h-4" />}
-              onClick={() => setInvitationOpen(true)}
-              aria-label="Invite new member"
-            >
-              Add Members
-            </Button>
+            {canInviteMembers && (
+              <Button
+                leading={<IconPlus className="!h-4" />}
+                onClick={() => setInvitationOpen(true)}
+                aria-label="Invite new member"
+              >
+                Add Members
+              </Button>
+            )}
           </Space>
         </Space>
       </div>
@@ -92,13 +97,14 @@ export const PeoplePage = () => {
           isFF(FF_LSDV_E_297) && <HeidiTips collection="organizationPage" />
         )}
       </div>
-      <InviteLink
-        opened={invitationOpen}
-        onClosed={() => {
-          console.log("hidden");
-          setInvitationOpen(false);
-        }}
-      />
+      {canInviteMembers && (
+        <InviteLink
+          opened={invitationOpen}
+          onClosed={() => {
+            setInvitationOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

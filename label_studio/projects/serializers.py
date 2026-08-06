@@ -31,11 +31,12 @@ from label_studio_sdk.label_interface.control_tags import (
     TimeSeriesLabelsTag,
     VideoRectangleTag,
 )
-from projects.models import Project, ProjectImport, ProjectOnboarding, ProjectReimport, ProjectSummary
+from projects.models import Project, ProjectImport, ProjectMember, ProjectOnboarding, ProjectReimport, ProjectSummary
 from rest_flex_fields import FlexFieldsModelSerializer
 from rest_framework import serializers
 from rest_framework.serializers import SerializerMethodField
 from tasks.models import Task
+from users.models import User
 from users.serializers import UserSimpleSerializer
 
 
@@ -83,6 +84,42 @@ class CreatedByFromContext:
 
     def __call__(self, serializer_field):
         return serializer_field.context.get('created_by')
+
+
+class ProjectMembershipSerializer(serializers.ModelSerializer):
+    user = UserSimpleSerializer(read_only=True)
+
+    class Meta:
+        model = ProjectMember
+        fields = ['id', 'user', 'enabled', 'created_at', 'updated_at']
+
+
+class ProjectMembershipCreateSerializer(serializers.Serializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    def validate_user(self, user):
+        from organizations.models import OrganizationMember
+
+        project = self.context['project']
+
+        if user.id == project.created_by_id:
+            raise serializers.ValidationError('Project creator already has access to this project.')
+
+        if not OrganizationMember.objects.filter(
+            user=user, organization=project.organization, deleted_at__isnull=True
+        ).exists():
+            raise serializers.ValidationError('User must be an active member of the project organization.')
+
+        return user
+
+    def create(self, validated_data):
+        project = self.context['project']
+        membership, _ = ProjectMember.objects.update_or_create(
+            project=project,
+            user=validated_data['user'],
+            defaults={'enabled': True},
+        )
+        return membership
 
 
 @extend_schema_serializer(deprecate_fields=['show_ground_truth_first'])

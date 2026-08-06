@@ -78,12 +78,19 @@ class ProjectMixin:
             tasks_number_changed,
         )
 
-    def has_permission(self, user):
-        """
-        Dummy stub for has_permission
-        """
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self  # link for activity log
-        return True
+
+        if not getattr(user, 'is_authenticated', False):
+            return False
+
+        if getattr(user, 'active_organization_id', None) != getattr(self, 'organization_id', None):
+            return False
+
+        if user.is_superuser or self.created_by_id == user.id:
+            return True
+
+        return self.has_collaborator_enabled(user)
 
     def _can_use_overlap(self):
         """

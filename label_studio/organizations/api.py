@@ -41,6 +41,11 @@ logger = logging.getLogger(__name__)
 HasObjectPermission = load_func(settings.MEMBER_PERM)
 
 
+def _ensure_superuser(user):
+    if not user.is_superuser:
+        raise PermissionDenied('Only superusers can manage organization invite links.')
+
+
 @method_decorator(
     name='get',
     decorator=extend_schema(
@@ -387,6 +392,7 @@ class OrganizationInviteAPI(generics.RetrieveAPIView):
     permission_required = all_permissions.organizations_invite
 
     def get(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         org = request.user.active_organization
         invite_url = '{}?token={}'.format(reverse('user-signup'), org.token)
         if hasattr(settings, 'FORCE_SCRIPT_NAME') and settings.FORCE_SCRIPT_NAME:
@@ -416,6 +422,7 @@ class OrganizationResetTokenAPI(APIView):
     parser_classes = (JSONParser,)
 
     def post(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         org = request.user.active_organization
         org.reset_token()
         logger.debug(f'New token for organization {org.pk} is {org.token}')

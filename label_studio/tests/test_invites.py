@@ -2,10 +2,40 @@
 
 import pytest
 
+from users.models import User
+
+
+def make_superuser(client):
+    client.user.is_superuser = True
+    client.user.is_staff = True
+    client.user.save(update_fields=['is_superuser', 'is_staff'])
+    return client
+
+
+@pytest.mark.django_db
+def test_first_signup_is_superuser_and_open_signup_is_disabled(client):
+    response = client.post('/user/signup', data={'email': 'root@example.com', 'password': 'S3cure-passw0rd!'})
+    assert response.status_code == 302
+
+    user = User.objects.get(email='root@example.com')
+    assert user.is_superuser is True
+    assert user.is_staff is True
+
+    client.logout()
+    response = client.post('/user/signup', data={'email': 'user@example.com', 'password': 'S3cure-passw0rd!'})
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_non_superuser_cannot_get_invite_link(business_client):
+    response = business_client.get('/api/invite')
+    assert response.status_code == 403
+
 
 @pytest.mark.django_db
 def test_signup_setting(business_client, client, settings):
     settings.DISABLE_SIGNUP_WITHOUT_LINK = True
+    business_client = make_superuser(business_client)
     response = client.post('/user/signup', data={'email': 'test_user@example.com', 'password': 'test_password'})
     assert response.status_code == 403
 
@@ -20,6 +50,7 @@ def test_signup_setting(business_client, client, settings):
 @pytest.mark.django_db
 def test_reset_token(business_client, client, settings):
     settings.DISABLE_SIGNUP_WITHOUT_LINK = True
+    business_client = make_superuser(business_client)
 
     # get invite_url link and check it works
     response = business_client.get('/api/invite')
@@ -54,6 +85,7 @@ def test_reset_token_not_valid(business_client, client, settings):
 @pytest.mark.django_db
 def test_token_get_not_post_shows_form(business_client, client, settings):
     settings.DISABLE_SIGNUP_WITHOUT_LINK = True
+    business_client = make_superuser(business_client)
 
     # can't bypass post
     response = business_client.get('/api/invite')

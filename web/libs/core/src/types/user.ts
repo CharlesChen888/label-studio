@@ -17,6 +17,7 @@ export type APIUser = {
   };
   allow_newsletters: boolean;
   date_joined: string;
+  is_superuser: boolean;
   permissions?: Ability[];
   social_accounts?: Array<{
     provider: string;

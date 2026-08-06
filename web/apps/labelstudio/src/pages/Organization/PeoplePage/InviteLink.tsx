@@ -1,22 +1,13 @@
 import { Button, Typography } from "@humansignal/ui";
 import { Space } from "@humansignal/ui/lib/space/space";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "apps/labelstudio/src/utils/bem";
-import { Modal } from "apps/labelstudio/src/components/Modal/ModalPopup";
-import { API } from "apps/labelstudio/src/providers/ApiProvider";
-import { useAtomValue } from "jotai";
-import { atomWithQuery } from "jotai-tanstack-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "../../../components/Form";
+import { Modal } from "../../../components/Modal/ModalPopup";
+import { useAPI } from "../../../providers/ApiProvider";
 
-const linkAtom = atomWithQuery(() => ({
-  queryKey: ["invite-link"],
-  async queryFn() {
-    // called only once when the component is rendered on page reload
-    // will also be reset when called `refetch()` on the Reset button
-    const result = await API.invoke("resetInviteLink");
-    return location.origin + result.invite_url;
-  },
-}));
+const inviteLinkQueryKey = ["invite-link"];
 
 export function InviteLink({
   opened,
@@ -28,6 +19,19 @@ export function InviteLink({
   onClosed?: () => void;
 }) {
   const modalRef = useRef<Modal>();
+  const api = useAPI();
+  const queryClient = useQueryClient();
+
+  const { data: link, isFetching } = useQuery({
+    queryKey: inviteLinkQueryKey,
+    enabled: opened,
+    async queryFn() {
+      const result = await api.callApi<{ invite_url: string }>("inviteLink");
+
+      return location.origin + result.invite_url;
+    },
+  });
+
   useEffect(() => {
     if (modalRef.current && opened) {
       modalRef.current?.show?.();
@@ -36,14 +40,20 @@ export function InviteLink({
     }
   }, [opened]);
 
+  const handleReset = useCallback(async () => {
+    const result = await api.callApi<{ invite_url: string }>("resetInviteLink");
+
+    queryClient.setQueryData(inviteLinkQueryKey, location.origin + result.invite_url);
+  }, [api, queryClient]);
+
   return (
     <Modal
       ref={modalRef}
       title="Invite members"
       opened={opened}
       bareFooter={true}
-      body={<InvitationModal />}
-      footer={<InvitationFooter />}
+      body={<InvitationModal link={link} isFetching={isFetching} />}
+      footer={<InvitationFooter link={link} isFetching={isFetching} onReset={handleReset} />}
       style={{ width: 640, height: 472 }}
       onHide={onClosed}
       onShow={onOpened}
@@ -51,14 +61,13 @@ export function InviteLink({
   );
 }
 
-const InvitationModal = () => {
-  const { data: link } = useAtomValue(linkAtom);
+const InvitationModal = ({ link, isFetching }: { link?: string; isFetching: boolean }) => {
   return (
     <div className={cn("invite").toClassName()}>
-      <Input value={link} style={{ width: "100%" }} readOnly />
+      <Input value={isFetching ? "Loading..." : (link ?? "")} style={{ width: "100%" }} readOnly />
       <Typography size="small" className="text-neutral-content-subtler mt-base mb-wider">
-        Invite members to join your Label Studio instance. People that you invite have full access to all of your
-        projects.{" "}
+        Invite members to join your Label Studio instance. Invited users start as regular users and can access only the
+        projects that a superuser assigns to them.{" "}
         <a
           href="https://labelstud.io/guide/signup.html"
           target="_blank"
@@ -78,9 +87,16 @@ const InvitationModal = () => {
   );
 };
 
-const InvitationFooter = () => {
+const InvitationFooter = ({
+  link,
+  isFetching,
+  onReset,
+}: {
+  link?: string;
+  isFetching: boolean;
+  onReset: () => Promise<void>;
+}) => {
   const { copyText, copied } = useTextCopy();
-  const { refetch, data: link } = useAtomValue(linkAtom);
 
   return (
     <Space spread>
@@ -89,8 +105,9 @@ const InvitationFooter = () => {
           variant="negative"
           look="outlined"
           style={{ width: 170 }}
-          onClick={() => refetch()}
+          onClick={() => void onReset()}
           aria-label="Refresh invite link"
+          disabled={isFetching}
         >
           Reset Link
         </Button>
@@ -99,8 +116,9 @@ const InvitationFooter = () => {
         <Button
           variant={copied ? "positive" : "primary"}
           className="w-[170px]"
-          onClick={() => copyText(link!)}
+          onClick={() => copyText(link ?? "")}
           aria-label="Copy invite link"
+          disabled={!link}
         >
           {copied ? "Copied!" : "Copy link"}
         </Button>

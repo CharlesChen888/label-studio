@@ -10,7 +10,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_sche
 from rest_framework import generics, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -62,6 +62,11 @@ _user_schema = {
         },
     },
 }
+
+
+def _ensure_superuser(user):
+    if not user.is_superuser:
+        raise PermissionDenied('Only superusers can create users directly.')
 
 _user_update_schema = {
     **_user_schema,
@@ -227,9 +232,11 @@ class UserAPI(viewsets.ModelViewSet):
         return super(UserAPI, self).list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         return super(UserAPI, self).create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        _ensure_superuser(self.request.user)
         instance = serializer.save()
         self.request.user.active_organization.add_user(instance)
 

@@ -111,7 +111,15 @@ class ProjectManager(models.Manager):
         return ProjectQuerySetWithFSM(self.model, using=self._db)
 
     def for_user(self, user):
-        return self.get_queryset().filter(organization=user.active_organization)
+        queryset = self.get_queryset()
+        if getattr(user, 'active_organization_id', None) is None:
+            return queryset.none()
+
+        queryset = queryset.filter(organization=user.active_organization)
+        if user.is_superuser:
+            return queryset
+
+        return queryset.filter(Q(created_by=user) | Q(members__user=user, members__enabled=True)).distinct()
 
     def with_state(self):
         """
@@ -1429,6 +1437,9 @@ class ProjectMember(models.Model):
     enabled = models.BooleanField(default=True, help_text='Project member is enabled')
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
     updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+
+    def has_permission(self, user, permission=None, request_method=None):
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
 
 def _build_flat_increment_sql(column, keys):

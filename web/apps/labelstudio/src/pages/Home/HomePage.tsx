@@ -8,6 +8,7 @@ import {
 import { Button, SimpleCard, Spinner, Tooltip, Typography } from "@humansignal/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { Link, useLocation } from "react-router-dom";
 import { useUpdatePageTitle } from "@humansignal/core";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
@@ -66,6 +67,7 @@ type Action = (typeof actions)[number]["type"];
 
 export const HomePage: Page = () => {
   const api = useAPI();
+  const { user } = useAuth();
   const location = useLocation();
   const [modalIsOpen, setModalIsOpen] = useAtom(creationDialogOpen);
   const [invitationIsOpen, setInvitationIsOpen] = useAtom(invitationOpen);
@@ -73,6 +75,8 @@ export const HomePage: Page = () => {
   const setProjectsData = useSetAtom(projectsDataAtom);
   const sortedProjects = useAtomValue(sortedProjectsAtom);
   const visitedIds = useAtomValue(visitedIdsAtom);
+  const canManageProjects = Boolean(user?.is_superuser);
+  const visibleActions = canManageProjects ? actions : [];
 
   useUpdatePageTitle("Home");
 
@@ -148,22 +152,24 @@ export const HomePage: Page = () => {
               Let's get you started.
             </Typography>
           </div>
-          <div className="flex justify-start gap-4">
-            {actions.map((action) => {
-              return (
-                <Button
-                  key={action.title}
-                  look="outlined"
-                  align="center"
-                  className="flex-grow-0 text-16/24 gap-2 text-primary-content text-left min-w-[250px] [&_svg]:w-6 [&_svg]:h-6 pl-2"
-                  onClick={handleActions(action.type)}
-                  leading={<action.icon />}
-                >
-                  {action.title}
-                </Button>
-              );
-            })}
-          </div>
+          {visibleActions.length > 0 && (
+            <div className="flex justify-start gap-4">
+              {visibleActions.map((action) => {
+                return (
+                  <Button
+                    key={action.title}
+                    look="outlined"
+                    align="center"
+                    className="flex-grow-0 text-16/24 gap-2 text-primary-content text-left min-w-[250px] [&_svg]:w-6 [&_svg]:h-6 pl-2"
+                    onClick={handleActions(action.type)}
+                    leading={<action.icon />}
+                  >
+                    {action.title}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
 
           <SimpleCard
             title={
@@ -193,14 +199,18 @@ export const HomePage: Page = () => {
                   <FolderOpenIcon />
                 </div>
                 <Typography variant="headline" size="small">
-                  Create your first project
+                  {canManageProjects ? "Create your first project" : "No projects available yet"}
                 </Typography>
                 <Typography size="small" className="text-neutral-content-subtler">
-                  Import your data and set up the labeling interface to start annotating
+                  {canManageProjects
+                    ? "Import your data and set up the labeling interface to start annotating"
+                    : "Ask a superuser to add you to a project to start annotating."}
                 </Typography>
-                <Button className="mt-4" onClick={() => setModalIsOpen(true)} aria-label="Create new project">
-                  Create Project
-                </Button>
+                {canManageProjects && (
+                  <Button className="mt-4" onClick={() => setModalIsOpen(true)} aria-label="Create new project">
+                    Create Project
+                  </Button>
+                )}
               </div>
             ) : isSuccess && data && sortedProjects.length > 0 ? (
               <div className="flex flex-col gap-1">
@@ -238,8 +248,8 @@ export const HomePage: Page = () => {
           </div>
         </section>
       </div>
-      {modalIsOpen && <CreateProject onClose={() => setModalIsOpen(false)} />}
-      <InviteLink opened={invitationIsOpen} onClosed={() => setInvitationIsOpen(false)} />
+      {canManageProjects && modalIsOpen && <CreateProject onClose={() => setModalIsOpen(false)} />}
+      {canManageProjects && <InviteLink opened={invitationIsOpen} onClosed={() => setInvitationIsOpen(false)} />}
     </main>
   );
 };

@@ -39,7 +39,7 @@
       <button type="submit" aria-label="Log In" class="login-button">Log in</button>
     </form>
   </div>
-  {% if not settings.DISABLE_SIGNUP_WITHOUT_LINK %}
+  {% if signup_enabled %}
   <div class="text-wrapper">
     <p class="">Don't have an account?</p>
     <a href="{% url 'user-signup' %}{% querystring %}">Sign up</a>

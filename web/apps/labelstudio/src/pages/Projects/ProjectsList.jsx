@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import { CheckIcon, DotsThreeIcon, IconSparks, MinusIcon } from "@humansignal/icons";
 import { Userpic, Button, Dropdown, Tooltip } from "@humansignal/ui";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { Menu, Pagination } from "../../components";
 import { cn } from "../../utils/bem";
 import { absoluteURL } from "../../utils/helpers";
@@ -35,7 +36,7 @@ export const ProjectsList = ({ projects, currentPage, totalItems, loadNextPage, 
   );
 };
 
-export const EmptyProjectsList = ({ openModal }) => {
+export const EmptyProjectsList = ({ openModal, canCreateProject }) => {
   return (
     <div className={cn("empty-projects-page").toClassName()}>
       <img
@@ -44,18 +45,26 @@ export const EmptyProjectsList = ({ openModal }) => {
         src={absoluteURL("/static/images/opossum_looking.png")}
       />
       <h1 className={cn("empty-projects-page").elem("header").toClassName()}>Heidi doesn't see any projects here!</h1>
-      <p>Create one and start labeling your data.</p>
-      <Button onClick={openModal} className="my-8" aria-label="Create new project">
-        Create Project
-      </Button>
+      <p>
+        {canCreateProject
+          ? "Create one and start labeling your data."
+          : "Ask a superuser to add you to a project to start labeling."}
+      </p>
+      {canCreateProject && (
+        <Button onClick={openModal} className="my-8" aria-label="Create new project">
+          Create Project
+        </Button>
+      )}
     </div>
   );
 };
 
 const ProjectCard = ({ project }) => {
+  const { user } = useAuth();
   const color = useMemo(() => {
     return DEFAULT_CARD_COLORS.includes(project.color) ? null : project.color;
   }, [project]);
+  const canManageProject = Boolean(user?.is_superuser);
 
   const projectColors = useMemo(() => {
     const textColor =
@@ -99,7 +108,7 @@ const ProjectCard = ({ project }) => {
               <Dropdown.Trigger
                 content={
                   <Menu contextual>
-                    <Menu.Item href={`/projects/${project.id}/settings`}>Settings</Menu.Item>
+                    {canManageProject && <Menu.Item href={`/projects/${project.id}/settings`}>Settings</Menu.Item>}
                     <Menu.Item href={`/projects/${project.id}/data?labeling=1`}>Label</Menu.Item>
                   </Menu>
                 }

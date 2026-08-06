@@ -106,7 +106,11 @@ class UserSignupForm(forms.Form):
         if 'elaborate' in cleaned and how_find_us == FOUND_US_ELABORATE:
             cleaned['elaborate']
 
-        user = User.objects.create_user(email, password, allow_newsletters=allow_newsletters)
+        create_user_kwargs = {'allow_newsletters': allow_newsletters}
+        if not User.objects.exists():
+            create_user_kwargs.update({'is_staff': True, 'is_superuser': True})
+
+        user = User.objects.create_user(email, password, **create_user_kwargs)
         return user
 
 

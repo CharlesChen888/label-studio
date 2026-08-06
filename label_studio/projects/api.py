@@ -36,6 +36,8 @@ from projects.serializers import (
     ProjectCountsSerializer,
     ProjectImportSerializer,
     ProjectLabelConfigSerializer,
+    ProjectMembershipCreateSerializer,
+    ProjectMembershipSerializer,
     ProjectModelVersionExtendedSerializer,
     ProjectModelVersionParamsSerializer,
     ProjectReimportSerializer,
@@ -43,7 +45,7 @@ from projects.serializers import (
     ProjectSummarySerializer,
 )
 from rest_framework import filters, generics, status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -96,6 +98,11 @@ _task_data_schema = {
     'type': 'object',
     'example': {'id': 1, 'my_image_url': '/static/samples/kittens.jpg'},
 }
+
+
+def _ensure_superuser(user):
+    if not user.is_superuser:
+        raise PermissionDenied('Only superusers can manage projects.')
 
 
 class ProjectListPagination(PageNumberPagination):
@@ -176,7 +183,7 @@ class ProjectListAPI(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         fields = serializer.validated_data.get('include')
         filter = serializer.validated_data.get('filter')
-        projects = Project.objects.filter(organization=self.request.user.active_organization).order_by(
+        projects = Project.objects.for_user(self.request.user).order_by(
             F('pinned_at').desc(nulls_last=True), '-created_at'
         )
         if filter in ['pinned_only', 'exclude_pinned']:
@@ -197,6 +204,7 @@ class ProjectListAPI(generics.ListCreateAPIView):
         return context
 
     def perform_create(self, ser):
+        _ensure_superuser(self.request.user)
         try:
             ser.save(organization=self.request.user.active_organization)
         except IntegrityError as e:
@@ -243,9 +251,7 @@ class ProjectCountsListAPI(generics.ListAPIView):
         serializer = GetFieldsSerializer(data=self.request.query_params)
         serializer.is_valid(raise_exception=True)
         fields = serializer.validated_data.get('include')
-        projects = Project.objects.with_counts(fields=fields).filter(
-            organization=self.request.user.active_organization
-        )
+        projects = ProjectManager.with_counts_annotate(Project.objects.for_user(self.request.user), fields=fields)
 
         # Only annotate FSM state for UI/API consumption when both feature flags are enabled
         if flag_set('fflag_feat_fit_568_finite_state_management', user=self.request.user) and flag_set(
@@ -377,9 +383,7 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
         serializer = GetFieldsSerializer(data=self.request.query_params)
         serializer.is_valid(raise_exception=True)
         fields = serializer.validated_data.get('include')
-        projects = Project.objects.with_counts(fields=fields).filter(
-            organization=self.request.user.active_organization
-        )
+        projects = ProjectManager.with_counts_annotate(Project.objects.for_user(self.request.user), fields=fields)
 
         # Only annotate FSM state for UI/API consumption when both feature flags are enabled
         if flag_set('fflag_feat_fit_568_finite_state_management', user=self.request.user) and flag_set(
@@ -394,10 +398,12 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
 
     @api_webhook_for_delete(WebhookAction.PROJECT_DELETED)
     def delete(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         return super(ProjectAPI, self).delete(request, *args, **kwargs)
 
     @api_webhook(WebhookAction.PROJECT_UPDATED)
     def patch(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         project = self.get_object()
         label_config = self.request.data.get('label_config')
 
@@ -418,6 +424,7 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
     @extend_schema(exclude=True)
     @api_webhook(WebhookAction.PROJECT_UPDATED)
     def put(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
         return super(ProjectAPI, self).put(request, *args, **kwargs)
 
 
@@ -862,7 +869,7 @@ class ProjectModelVersions(generics.RetrieveAPIView):
     permission_required = all_permissions.projects_view
 
     def get_queryset(self):
-        return Project.objects.filter(organization=self.request.user.active_organization)
+        return Project.objects.for_user(self.request.user)
 
     def get(self, request, *args, **kwargs):
         project = self.get_object()
@@ -930,3 +937,59 @@ class ProjectAnnotatorsAPI(generics.RetrieveAPIView):
         users = User.objects.filter(id__in=annotator_ids).prefetch_related('om_through').order_by('id')
         data = UserSimpleSerializer(users, many=True, context={'request': request}).data
         return Response(data)
+
+
+@extend_schema(exclude=True)
+class ProjectMemberListAPI(GetParentObjectMixin, generics.ListCreateAPIView):
+    parser_classes = (JSONParser,)
+    parent_queryset = Project.objects.all()
+    permission_required = ViewClassPermission(
+        GET=all_permissions.projects_view,
+        POST=all_permissions.projects_change,
+    )
+
+    def get_queryset(self):
+        return self.parent_object.members.select_related('user').order_by('user__email')
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ProjectMembershipCreateSerializer
+        return ProjectMembershipSerializer
+
+    def get_serializer_context(self):
+        return {
+            **super().get_serializer_context(),
+            'project': self.parent_object,
+        }
+
+    def list(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
+        return super().list(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membership = serializer.save()
+        response_serializer = ProjectMembershipSerializer(membership, context=self.get_serializer_context())
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(exclude=True)
+class ProjectMemberDetailAPI(GetParentObjectMixin, generics.DestroyAPIView):
+    parser_classes = (JSONParser,)
+    parent_queryset = Project.objects.all()
+    parent_lookup_field = 'pk'
+    parent_lookup_url_kwarg = 'pk'
+    permission_required = ViewClassPermission(
+        DELETE=all_permissions.projects_change,
+    )
+    lookup_field = 'user_id'
+    lookup_url_kwarg = 'user_pk'
+
+    def get_queryset(self):
+        return self.parent_object.members.select_related('user')
+
+    def delete(self, request, *args, **kwargs):
+        _ensure_superuser(request.user)
+        return super().delete(request, *args, **kwargs)

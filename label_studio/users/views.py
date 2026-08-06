@@ -17,8 +17,17 @@ from organizations.models import Organization
 from rest_framework.authtoken.models import Token
 from users import forms
 from users.functions import login, proceed_registration
+from users.models import User
 
 logger = logging.getLogger()
+
+
+def _is_bootstrap_signup():
+    return not User.objects.exists()
+
+
+def _has_valid_invite_token(token, organization):
+    return bool(token and organization and token == organization.token)
 
 
 @login_required
@@ -42,6 +51,9 @@ def user_signup(request):
     user = request.user
     next_page = request.GET.get('next')
     token = request.GET.get('token')
+    organization = Organization.objects.first()
+    bootstrap_signup = _is_bootstrap_signup()
+    has_valid_invite_token = _has_valid_invite_token(token, organization)
 
     # checks if the URL is a safe redirection.
     if not next_page or not url_has_allowed_host_and_scheme(url=next_page, allowed_hosts=request.get_host()):
@@ -53,14 +65,16 @@ def user_signup(request):
     if user.is_authenticated:
         return redirect(next_page)
 
+    if not bootstrap_signup and not has_valid_invite_token:
+        raise PermissionDenied()
+
     # make a new user
     if request.method == 'POST':
-        organization = Organization.objects.first()
-        if settings.DISABLE_SIGNUP_WITHOUT_LINK is True:
-            if not (token and organization and token == organization.token):
+        if bootstrap_signup:
+            if token and organization and token != organization.token:
                 raise PermissionDenied()
         else:
-            if token and organization and token != organization.token:
+            if not has_valid_invite_token:
                 raise PermissionDenied()
 
         user_form = forms.UserSignupForm(request.POST)
@@ -82,6 +96,7 @@ def user_signup(request):
                 'token': token,
                 'found_us_options': forms.FOUND_US_OPTIONS,
                 'elaborate': forms.FOUND_US_ELABORATE,
+                'bootstrap_signup': bootstrap_signup,
             },
         )
 
@@ -93,6 +108,7 @@ def user_signup(request):
             'organization_form': organization_form,
             'next': quote(next_page),
             'token': token,
+            'bootstrap_signup': bootstrap_signup,
         },
     )
 
@@ -130,9 +146,17 @@ def user_login(request):
             return redirect(next_page)
 
     if flag_set('fflag_feat_front_lsdv_e_297_increase_oss_to_enterprise_adoption_short'):
-        return render(request, 'users/new-ui/user_login.html', {'form': form, 'next': quote(next_page)})
+        return render(
+            request,
+            'users/new-ui/user_login.html',
+            {'form': form, 'next': quote(next_page), 'signup_enabled': _is_bootstrap_signup()},
+        )
 
-    return render(request, 'users/user_login.html', {'form': form, 'next': quote(next_page)})
+    return render(
+        request,
+        'users/user_login.html',
+        {'form': form, 'next': quote(next_page), 'signup_enabled': _is_bootstrap_signup()},
+    )
 
 
 @login_required
