@@ -17,6 +17,11 @@ describe("EmptyState Component", () => {
     canImport: true,
     onOpenSourceStorageModal: mock(),
     onOpenImportModal: mock(),
+    project: {
+      created_by: {
+        id: 1,
+      },
+    },
   };
 
   beforeEach(() => {
@@ -70,7 +75,7 @@ describe("EmptyState Component", () => {
     spyOn(docsModule, "getDocsUrl").mockImplementation((path: string) => `https://docs.example.com/${path}`);
 
     spyOn(authProviderModule, "useAuth").mockReturnValue({
-      user: { id: 1, username: "testuser" },
+      user: { id: 1, username: "testuser", is_superuser: false },
       permissions: {
         can: (ability: string) => ability === "storages.change",
       },
@@ -109,6 +114,24 @@ describe("EmptyState Component", () => {
       expect(screen.queryByTestId("dm-import-button")).not.toBeInTheDocument();
       // Connect Storage button should still be present
       expect(screen.getByTestId("dm-connect-source-storage-button")).toBeInTheDocument();
+    });
+
+    it("should hide import onboarding content for non-superuser non-project-creator", () => {
+      render(
+        <EmptyState
+          {...defaultProps}
+          project={{
+            created_by: {
+              id: 2,
+            },
+          }}
+        />,
+      );
+
+      expect(screen.queryByText("Import data to get your project started")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("dm-storage-provider-icons")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("dm-connect-source-storage-button")).not.toBeInTheDocument();
+      expect(screen.getByText("No tasks available")).toBeInTheDocument();
     });
 
     it("should render interactive state when canImport is true", () => {

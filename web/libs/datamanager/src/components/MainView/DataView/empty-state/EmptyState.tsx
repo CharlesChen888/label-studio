@@ -31,6 +31,9 @@ interface EmptyStateProps {
   // Role-based props (optional)
   userRole?: string;
   project?: {
+    created_by?: {
+      id?: number;
+    };
     assignment_settings?: {
       label_stream_task_distribution?: "auto_distribution" | "assigned_only" | string;
     };
@@ -215,7 +218,8 @@ export const EmptyState: FC<EmptyStateProps> = ({
   onClearFilters,
 }) => {
   const isImportEnabled = Boolean(canImport);
-  const { permissions } = useAuth();
+  const { user, permissions } = useAuth();
+  const canManageProject = Boolean(user?.is_superuser || (user?.id && project?.created_by?.id === user.id));
 
   // If filters are applied, show the filter-specific empty state (regardless of user role)
   if (hasFilters) {
@@ -285,6 +289,15 @@ export const EmptyState: FC<EmptyStateProps> = ({
         description: "Tasks will appear here when they become available",
       });
     }
+  }
+
+  // Non project managers should not see data onboarding actions in empty projects.
+  if (!canManageProject) {
+    return renderEmptyStateLayout({
+      icon: <IconInbox />,
+      title: "No tasks available",
+      description: "Tasks imported to this project will appear here",
+    });
   }
 
   // Default case: show import functionality (existing behavior for Owners/Admins/Managers)
