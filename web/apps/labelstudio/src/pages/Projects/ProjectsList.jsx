@@ -64,7 +64,7 @@ const ProjectCard = ({ project }) => {
   const color = useMemo(() => {
     return DEFAULT_CARD_COLORS.includes(project.color) ? null : project.color;
   }, [project]);
-  const canManageProject = Boolean(user?.is_superuser);
+  const canManageProject = Boolean(user?.is_superuser || (user?.id && project?.created_by?.id === user.id));
 
   const projectColors = useMemo(() => {
     const textColor =

@@ -2,6 +2,7 @@ import { Button, buttonVariant, ToastContext, ToastType } from "@humansignal/ui"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { generatePath, useHistory } from "react-router";
 import { Link, NavLink } from "react-router-dom";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { Spinner } from "../../components";
 import { modal } from "../../components/Modal/Modal";
 import { Space } from "../../components/Space/Space";
@@ -18,6 +19,7 @@ import { APIConfig } from "./api-config";
 import "./DataManager.prefix.css";
 
 const loadDependencies = () => [import("@humansignal/datamanager"), import("@humansignal/editor")];
+const DELETE_RESOURCE_INTERFACES = ["annotations:delete", "predictions:delete"];
 
 const initializeDataManager = async (root, props, params) => {
   if (!window.LabelStudio) throw Error("Label Studio Frontend doesn't exist on the page");
@@ -64,12 +66,21 @@ export const DataManagerPage = ({ ...props }) => {
   const params = useParams();
   const history = useHistory();
   const api = useAPI();
+  const { user } = useAuth();
   const { project } = useProject();
   const setContextProps = useContextProps();
   const [crashed, _setCrashed] = useState(false);
   const [loading, setLoading] = useState(!window.DataManager || !window.LabelStudio);
   const dataManagerRef = useRef();
   const projectId = project?.id;
+  const canManageProject = Boolean(user?.is_superuser || (user?.id && project?.created_by?.id === user.id));
+  const interfacesModifier = useCallback(
+    (interfaces, isLabelStream) => {
+      if (isLabelStream || canManageProject) return interfaces;
+      return interfaces.filter((item) => !DELETE_RESOURCE_INTERFACES.includes(item));
+    },
+    [canManageProject],
+  );
 
   const init = useCallback(async () => {
     if (!window.LabelStudio) return;
@@ -86,11 +97,24 @@ export const DataManagerPage = ({ ...props }) => {
 
     const dataManager = (dataManagerRef.current =
       dataManagerRef.current ??
-      (await initializeDataManager(root.current, props, {
-        ...params,
-        project,
-        autoAnnotation: isDefined(interactiveBacked),
-      })));
+      (await initializeDataManager(
+        root.current,
+        {
+          ...props,
+          interfacesModifier,
+          interfaces: {
+            import: canManageProject,
+            export: canManageProject,
+            backButton: false,
+            labelingHeader: false,
+          },
+        },
+        {
+          ...params,
+          project,
+          autoAnnotation: isDefined(interactiveBacked),
+        },
+      )));
 
     Object.assign(window, { dataManager });
 
@@ -118,22 +142,24 @@ export const DataManagerPage = ({ ...props }) => {
       }
     });
 
-    dataManager.on("settingsClicked", () => {
-      history.push(buildLink("/settings/labeling", { id: params?.id ?? project?.id }));
-    });
+    if (canManageProject) {
+      dataManager.on("settingsClicked", () => {
+        history.push(buildLink("/settings/labeling", { id: params?.id ?? project?.id }));
+      });
 
-    dataManager.on("importClicked", () => {
-      history.push(buildLink("/data/import", { id: params?.id ?? project?.id }));
-    });
+      dataManager.on("importClicked", () => {
+        history.push(buildLink("/data/import", { id: params?.id ?? project?.id }));
+      });
 
-    // Navigate to Storage Settings and auto-open Add Source Storage modal
-    dataManager.on("openSourceStorageModal", () => {
-      history.push(buildLink("/settings/storage?open=source", { id: params?.id ?? project?.id }));
-    });
+      // Navigate to Storage Settings and auto-open Add Source Storage modal
+      dataManager.on("openSourceStorageModal", () => {
+        history.push(buildLink("/settings/storage?open=source", { id: params?.id ?? project?.id }));
+      });
 
-    dataManager.on("exportClicked", () => {
-      history.push(buildLink("/data/export", { id: params?.id ?? project?.id }));
-    });
+      dataManager.on("exportClicked", () => {
+        history.push(buildLink("/data/export", { id: params?.id ?? project?.id }));
+      });
+    }
 
     dataManager.on("error", (response) => {
       api.handleError(response);
@@ -192,7 +218,7 @@ export const DataManagerPage = ({ ...props }) => {
     }
 
     setContextProps({ dmRef: dataManager });
-  }, [projectId]);
+  }, [projectId, canManageProject, interfacesModifier]);
 
   const destroyDM = useCallback(() => {
     if (dataManagerRef.current) {
@@ -239,12 +265,17 @@ DataManagerPage.pages = {
   ImportModal,
 };
 DataManagerPage.context = ({ dmRef }) => {
+  const { user } = useAuth();
   const { project } = useProject();
   const [mode, setMode] = useState(dmRef?.mode ?? "explorer");
 
-  const links = {
-    "/settings": "Settings",
-  };
+  const canManageProject = Boolean(user?.is_superuser || (user?.id && project?.created_by?.id === user.id));
+
+  const links = canManageProject
+    ? {
+        "/settings": "Settings",
+      }
+    : {};
 
   const updateCrumbs = (currentMode) => {
     const isExplorer = currentMode === "explorer";

@@ -46,7 +46,9 @@ class ImportStorageListAPI(generics.ListCreateAPIView):
         from rest_framework.exceptions import PermissionDenied
 
         project = serializer.validated_data.get('project')
-        if project is not None and not project.has_permission(self.request.user):
+        if project is not None and not project.has_permission(
+            self.request.user, permission=all_permissions.storages_change, request_method='POST'
+        ):
             raise PermissionDenied('You do not have permission to create storages for this project.')
         super().perform_create(serializer)
 
@@ -94,7 +96,9 @@ class ExportStorageListAPI(generics.ListCreateAPIView):
         from rest_framework.exceptions import PermissionDenied
 
         project = serializer.validated_data.get('project')
-        if project is not None and not project.has_permission(self.request.user):
+        if project is not None and not project.has_permission(
+            self.request.user, permission=all_permissions.storages_change, request_method='POST'
+        ):
             raise PermissionDenied('You do not have permission to create storages for this project.')
 
         # double check: not export storages don't validate connection in serializer,

@@ -831,9 +831,9 @@ class ProjectStorageMixin(models.Model):
         help_text='A unique integer value identifying this project.',
     )
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.project  # link for activity log
-        if self.project.has_permission(user):
+        if self.project.has_permission(user, permission=permission, request_method=request_method):
             return True
         return False
 
@@ -1122,9 +1122,9 @@ class ExportStorageLink(models.Model):
                 return None
             raise
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.annotation.project  # link for activity log
-        if self.annotation.has_permission(user):
+        if self.annotation.has_permission(user, permission=permission, request_method=request_method):
             return True
         return False
 

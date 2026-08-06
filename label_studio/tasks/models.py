@@ -368,11 +368,13 @@ class Task(TaskMixin, FsmHistoryStateModel):
             if hasattr(self, link_name):
                 return getattr(self, link_name).key
 
-    def has_permission(self, user: 'User') -> bool:  # noqa: F821
+    def has_permission(self, user: 'User', permission=None, request_method=None) -> bool:  # noqa: F821
         mixin_has_permission = cast(bool, super().has_permission(user))
 
         user.project = self.project  # link for activity log
-        return mixin_has_permission and self.project.has_permission(user)
+        return mixin_has_permission and self.project.has_permission(
+            user, permission=permission, request_method=request_method
+        )
 
     def clear_expired_locks(self):
         self.locks.filter(expire_at__lt=now()).delete()
@@ -798,11 +800,13 @@ class Annotation(AnnotationMixin, FsmHistoryStateModel):
 
         return len(res)
 
-    def has_permission(self, user: 'User') -> bool:  # noqa: F821
+    def has_permission(self, user: 'User', permission=None, request_method=None) -> bool:  # noqa: F821
         mixin_has_permission = cast(bool, super().has_permission(user))
 
         user.project = self.project  # link for activity log
-        return mixin_has_permission and self.project.has_permission(user)
+        return mixin_has_permission and self.project.has_permission(
+            user, permission=permission, request_method=request_method
+        )
 
     def increase_project_summary_counters(self):
         if hasattr(self.project, 'summary'):
@@ -933,8 +937,8 @@ class TaskLock(FsmHistoryStateModel):
     )
     created_at = models.DateTimeField(_('created at'), auto_now_add=True, help_text='Creation time', null=True)
 
-    def has_permission(self, user):
-        return self.task.has_permission(user)
+    def has_permission(self, user, permission=None, request_method=None):
+        return self.task.has_permission(user, permission=permission, request_method=request_method)
 
 
 class AnnotationDraftQuerySet(models.QuerySet):
@@ -1011,9 +1015,9 @@ class AnnotationDraft(FsmHistoryStateModel):
         """Humanize date"""
         return timesince(self.created_at)
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.task.project  # link for activity log
-        return self.task.project.has_permission(user)
+        return self.task.project.has_permission(user, permission=permission, request_method=request_method)
 
     def save(self, *args, **kwargs):
         # Strip NUL (U+0000) bytes that Postgres JSONB cannot store. Source PDFs with an
@@ -1107,9 +1111,9 @@ class Prediction(models.Model):
         """Humanize date"""
         return timesince(self.created_at)
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.project  # link for activity log
-        return self.project.has_permission(user)
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
     @classmethod
     def prepare_prediction_result(cls, result, project):

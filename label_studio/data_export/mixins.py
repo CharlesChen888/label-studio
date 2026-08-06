@@ -33,9 +33,9 @@ logger = logging.getLogger(__name__)
 
 
 class ExportMixin:
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.project  # link for activity log
-        return self.project.has_permission(user)
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
     def get_default_title(self):
         return f'{self.project.title.replace(" ", "-")}-at-{dateformat.format(timezone.now(), "Y-m-d-H-i")}'

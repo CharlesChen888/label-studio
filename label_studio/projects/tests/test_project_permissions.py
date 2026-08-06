@@ -1,9 +1,11 @@
 import pytest
 
+from data_manager.actions import get_all_actions
 from organizations.models import Organization
 from projects.models import ProjectMember
 from projects.tests.factories import ProjectFactory
 from rest_framework.test import APIClient
+from tasks.tests.factories import AnnotationFactory, PredictionFactory, TaskFactory
 from users.models import User
 from users.tests.factories import UserFactory
 
@@ -110,3 +112,126 @@ def test_only_superuser_can_create_update_delete_projects_and_manage_members():
     remove_member_response = superuser_client.delete(f'/api/projects/{project.id}/memberships/{candidate_member.id}/')
     assert remove_member_response.status_code == 204
     assert not ProjectMember.objects.filter(project=project, user=candidate_member).exists()
+
+
+@pytest.mark.django_db
+def test_only_project_creator_or_superuser_can_delete_project_resources():
+    superuser, organization = create_superuser()
+    creator = UserFactory()
+    collaborator = UserFactory()
+
+    add_user_to_organization(organization, creator)
+    add_user_to_organization(organization, collaborator)
+
+    project = ProjectFactory(organization=organization, created_by=creator)
+    project.add_collaborator(collaborator)
+
+    collaborator_client = APIClient()
+    collaborator_client.force_authenticate(user=collaborator)
+
+    creator_client = APIClient()
+    creator_client.force_authenticate(user=creator)
+
+    superuser_client = APIClient()
+    superuser_client.force_authenticate(user=superuser)
+
+    blocked_task = TaskFactory(project=project)
+    blocked_annotation = AnnotationFactory(task=TaskFactory(project=project), project=project)
+    blocked_prediction = PredictionFactory(task=TaskFactory(project=project), project=project, model_version='blocked-v1')
+
+    assert collaborator_client.delete(f'/api/tasks/{blocked_task.id}/').status_code == 403
+    assert collaborator_client.delete(f'/api/annotations/{blocked_annotation.id}/').status_code == 403
+    assert collaborator_client.delete(f'/api/predictions/{blocked_prediction.id}/').status_code == 403
+
+    creator_task = TaskFactory(project=project)
+    creator_annotation = AnnotationFactory(task=TaskFactory(project=project), project=project)
+    creator_prediction = PredictionFactory(task=TaskFactory(project=project), project=project, model_version='creator-v1')
+
+    assert creator_client.delete(f'/api/tasks/{creator_task.id}/').status_code == 204
+    assert creator_client.delete(f'/api/annotations/{creator_annotation.id}/').status_code == 204
+    assert creator_client.delete(f'/api/predictions/{creator_prediction.id}/').status_code == 204
+
+    superuser_task = TaskFactory(project=project)
+    superuser_annotation = AnnotationFactory(task=TaskFactory(project=project), project=project)
+    superuser_prediction = PredictionFactory(
+        task=TaskFactory(project=project),
+        project=project,
+        model_version='superuser-v1',
+    )
+
+    assert superuser_client.delete(f'/api/tasks/{superuser_task.id}/').status_code == 204
+    assert superuser_client.delete(f'/api/annotations/{superuser_annotation.id}/').status_code == 204
+    assert superuser_client.delete(f'/api/predictions/{superuser_prediction.id}/').status_code == 204
+
+
+@pytest.mark.django_db
+def test_collaborators_cannot_access_bulk_delete_project_actions():
+    superuser, organization = create_superuser()
+    creator = UserFactory()
+    collaborator = UserFactory()
+
+    add_user_to_organization(organization, creator)
+    add_user_to_organization(organization, collaborator)
+
+    project = ProjectFactory(organization=organization, created_by=creator)
+    project.add_collaborator(collaborator)
+    task = TaskFactory(project=project)
+    AnnotationFactory(task=task, project=project, completed_by=creator)
+    PredictionFactory(task=task, project=project, model_version='shared-v1')
+
+    collaborator_actions = {action['id'] for action in get_all_actions(collaborator, project)}
+    assert 'delete_tasks' not in collaborator_actions
+    assert 'delete_tasks_annotations' not in collaborator_actions
+    assert 'delete_tasks_predictions' not in collaborator_actions
+
+    collaborator_client = APIClient()
+    collaborator_client.force_authenticate(user=collaborator)
+
+    delete_tasks_response = collaborator_client.post(
+        f'/api/dm/actions?project={project.id}&id=delete_tasks',
+        data={'selectedItems': {'all': True, 'excluded': []}},
+        format='json',
+    )
+    assert delete_tasks_response.status_code == 403
+
+    delete_annotations_response = collaborator_client.post(
+        f'/api/dm/actions?project={project.id}&id=delete_tasks_annotations',
+        data={'selectedItems': {'all': True, 'excluded': []}},
+        format='json',
+    )
+    assert delete_annotations_response.status_code == 403
+
+    delete_predictions_response = collaborator_client.post(
+        f'/api/dm/actions?project={project.id}&id=delete_tasks_predictions',
+        data={'selectedItems': {'all': True, 'excluded': []}},
+        format='json',
+    )
+    assert delete_predictions_response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_collaborators_cannot_delete_project_tasks_or_model_versions():
+    superuser, organization = create_superuser()
+    creator = UserFactory()
+    collaborator = UserFactory()
+
+    add_user_to_organization(organization, creator)
+    add_user_to_organization(organization, collaborator)
+
+    project = ProjectFactory(organization=organization, created_by=creator)
+    project.add_collaborator(collaborator)
+    TaskFactory(project=project)
+    PredictionFactory(task=TaskFactory(project=project), project=project, model_version='bulk-v1')
+
+    collaborator_client = APIClient()
+    collaborator_client.force_authenticate(user=collaborator)
+
+    delete_all_tasks_response = collaborator_client.delete(f'/api/projects/{project.id}/tasks/')
+    assert delete_all_tasks_response.status_code == 403
+
+    delete_model_version_response = collaborator_client.delete(
+        f'/api/projects/{project.id}/model-versions/',
+        data={'model_version': 'bulk-v1'},
+        format='json',
+    )
+    assert delete_model_version_response.status_code == 403

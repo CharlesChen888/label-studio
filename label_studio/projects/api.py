@@ -761,6 +761,7 @@ class ProjectTaskListAPI(GetParentObjectMixin, generics.ListCreateAPIView, gener
 
     def delete(self, request, *args, **kwargs):
         project = generics.get_object_or_404(Project.objects.for_user(self.request.user), pk=self.kwargs['pk'])
+        self.check_object_permissions(request, project)
         task_ids = list(Task.objects.filter(project=project).values('id'))
         Task.delete_tasks_without_signals(Task.objects.filter(project=project))
         logger.info(f'calling reset project_id={project.id} ProjectTaskListAPI.delete()')
@@ -866,7 +867,10 @@ class ProjectSampleTask(generics.RetrieveAPIView):
 @extend_schema(exclude=True)
 class ProjectModelVersions(generics.RetrieveAPIView):
     parser_classes = (JSONParser,)
-    permission_required = all_permissions.projects_view
+    permission_required = ViewClassPermission(
+        GET=all_permissions.projects_view,
+        DELETE=all_permissions.predictions_any,
+    )
 
     def get_queryset(self):
         return Project.objects.for_user(self.request.user)

@@ -1531,9 +1531,9 @@ class ProjectSummary(models.Model):
         help_text='Dimension-backed label distribution counts cache',
     )
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.project  # link for activity log
-        return self.project.has_permission(user)
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
     def reset(self, tasks_data_based=True):
         if tasks_data_based:
@@ -1876,8 +1876,8 @@ class ProjectImport(models.Model):
     tasks = models.JSONField(blank=True, null=True)
     task_ids = models.JSONField(default=list)
 
-    def has_permission(self, user):
-        return self.project.has_permission(user)
+    def has_permission(self, user, permission=None, request_method=None):
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
 
 class ProjectReimport(models.Model):
@@ -1900,5 +1900,5 @@ class ProjectReimport(models.Model):
     data_columns = models.JSONField(default=list)
     traceback = models.TextField(null=True, blank=True)
 
-    def has_permission(self, user):
-        return self.project.has_permission(user)
+    def has_permission(self, user, permission=None, request_method=None):
+        return self.project.has_permission(user, permission=permission, request_method=request_method)

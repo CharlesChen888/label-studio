@@ -1,6 +1,7 @@
 import { Redirect } from "react-router-dom";
 import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { SidebarMenu } from "../../components/SidebarMenu/SidebarMenu";
+import { useProject } from "../../providers/ProjectProvider";
 import { WebhookPage } from "../WebhookPage/WebhookPage";
 import { DangerZone } from "./DangerZone";
 import { GeneralSettings } from "./GeneralSettings";
@@ -14,12 +15,16 @@ import "./settings.prefix.css";
 
 export const MenuLayout = ({ children, ...routeProps }) => {
   const { user, isLoading } = useAuth();
+  const { project } = useProject();
 
   if (isLoading) {
     return null;
   }
 
-  if (!user?.is_superuser) {
+  const isProjectCreator = Boolean(user?.id && project?.created_by?.id === user.id);
+  const canSeeSettings = Boolean(user?.is_superuser || isProjectCreator);
+
+  if (!canSeeSettings) {
     return <Redirect to={`/projects/${routeProps.match.params.id}/data`} />;
   }
 

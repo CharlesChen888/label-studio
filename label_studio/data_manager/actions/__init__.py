@@ -59,8 +59,9 @@ def check_action_permission(user, action, project):
     permissions = action['permission']
     if not isinstance(permissions, list):
         permissions = [permissions]
+    request_method = 'DELETE' if action.get('id', '').startswith('delete_') else None
     for permission in permissions:
-        if not user.has_perm(permission):
+        if not project.has_permission(user, permission=permission, request_method=request_method):
             return False
     return True
 

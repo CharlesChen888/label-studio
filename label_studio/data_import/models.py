@@ -35,9 +35,9 @@ class FileUpload(models.Model):
     project = models.ForeignKey('projects.Project', related_name='file_uploads', on_delete=models.CASCADE)
     file = models.FileField(upload_to=upload_name_generator)
 
-    def has_permission(self, user):
+    def has_permission(self, user, permission=None, request_method=None):
         user.project = self.project  # link for activity log
-        return self.project.has_permission(user)
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
 
     @cached_property
     def filepath(self):

@@ -87,8 +87,28 @@ class ProjectMixin:
         if getattr(user, 'active_organization_id', None) != getattr(self, 'organization_id', None):
             return False
 
-        if user.is_superuser or self.created_by_id == user.id:
+        is_superuser = user.is_superuser
+        is_project_creator = self.created_by_id == user.id
+
+        if is_superuser or is_project_creator:
             return True
+
+        admin_permissions = {
+            'projects.create',
+            'projects.change',
+            'projects.delete',
+            'projects.reset_cache',
+            'storages.change',
+            'storages.sync',
+            'tasks.delete',
+            'annotations.delete',
+        }
+
+        if permission in admin_permissions:
+            return False
+
+        if permission == 'predictions.any' and request_method == 'DELETE':
+            return False
 
         return self.has_collaborator_enabled(user)
 
