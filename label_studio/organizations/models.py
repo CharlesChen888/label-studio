@@ -15,6 +15,12 @@ logger = logging.getLogger(__name__)
 OrganizationMemberMixin = load_func(settings.ORGANIZATION_MEMBER_MIXIN)
 
 
+class RoleChoice(models.TextChoices):
+    OWNER = 'owner', _('Owner')
+    ANNOTATOR = 'annotator', _('Annotator')
+    REVIEWER = 'reviewer', _('Reviewer')
+
+
 class OrganizationMember(OrganizationMemberMixin, models.Model):
     """ """
 
@@ -23,6 +29,13 @@ class OrganizationMember(OrganizationMemberMixin, models.Model):
     )
     organization = models.ForeignKey(
         'organizations.Organization', on_delete=models.CASCADE, help_text='Organization ID'
+    )
+    role = models.CharField(
+        _('role'),
+        max_length=20,
+        choices=RoleChoice.choices,
+        default=RoleChoice.ANNOTATOR,
+        help_text='User role in the organization',
     )
 
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
@@ -53,7 +66,7 @@ class OrganizationMember(OrganizationMemberMixin, models.Model):
 
     @cached_property
     def is_owner(self):
-        return self.user.id == self.organization.created_by.id
+        return self.role == RoleChoice.OWNER
 
     class Meta:
         ordering = ['pk']
@@ -139,13 +152,13 @@ class Organization(OrganizationMixin, models.Model):
     def has_permission(self, user):
         return OrganizationMember.objects.filter(user=user, organization=self, deleted_at__isnull=True).exists()
 
-    def add_user(self, user):
+    def add_user(self, user, role=RoleChoice.ANNOTATOR):
         if self.users.filter(pk=user.pk).exists():
             logger.debug('User already exists in organization.')
             return
 
         with transaction.atomic():
-            om = OrganizationMember(user=user, organization=self)
+            om = OrganizationMember(user=user, organization=self, role=role)
             om.save()
 
             return om

@@ -327,6 +327,83 @@ class OrganizationMemberDetailAPI(GetParentObjectMixin, generics.RetrieveDestroy
 
 
 @method_decorator(
+    name='patch',
+    decorator=extend_schema(
+        tags=['Organizations'],
+        summary='Update organization member role',
+        description='Update the role of a member in the organization. Only owners or superusers can change roles.',
+        parameters=[
+            OpenApiParameter(
+                name='user_pk',
+                type=OpenApiTypes.INT,
+                location='path',
+                description='A unique integer value identifying the user whose role will be updated.',
+            ),
+        ],
+        request={
+            'type': 'object',
+            'properties': {
+                'role': {
+                    'type': 'string',
+                    'enum': ['owner', 'annotator', 'reviewer'],
+                    'description': 'The new role for the member.',
+                }
+            },
+            'required': ['role'],
+        },
+        responses={
+            200: OpenApiResponse(description='Role updated successfully.'),
+            403: OpenApiResponse(description='Only owners or superusers can change roles, or cannot remove the last owner.'),
+            404: OpenApiResponse(description='Member not found'),
+        },
+        extensions={
+            'x-fern-sdk-group-name': ['organizations', 'members'],
+            'x-fern-sdk-method-name': 'update_role',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class OrganizationMemberRoleAPI(GetParentObjectMixin, generics.UpdateAPIView):
+    permission_required = ViewClassPermission(
+        PATCH=all_permissions.organizations_change,
+    )
+    parent_queryset = Organization.objects.all()
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = OrganizationMemberSerializer
+    http_method_names = ['patch']
+
+    def get_queryset(self):
+        return OrganizationMember.objects.filter(organization=self.parent_object).select_related('user')
+
+    def patch(self, request, pk, user_pk):
+        org = self.parent_object
+        user = get_object_or_404(User, pk=user_pk)
+        member = get_object_or_404(OrganizationMember, user=user, organization=org)
+
+        # Check if user is owner or superuser
+        if not (request.user.is_superuser or request.user.om_through.filter(organization=org, role='owner').exists()):
+            raise PermissionDenied('Only owners or superusers can change member roles.')
+
+        # Get the new role from request
+        new_role = request.data.get('role')
+        if not new_role or new_role not in ['owner', 'annotator', 'reviewer']:
+            return Response({'detail': 'Invalid role value. Must be one of: owner, annotator, reviewer.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Cannot change the last owner's role to non-owner
+        if member.role == 'owner' and new_role != 'owner':
+            owners_count = OrganizationMember.objects.filter(organization=org, role='owner').count()
+            if owners_count <= 1:
+                raise PermissionDenied('Cannot change the role of the last owner. Create another owner first.')
+
+        # Update the role
+        member.role = new_role
+        member.save(update_fields=['role'])
+
+        serializer = self.get_serializer(member)
+        return Response(serializer.data)
+
+
+@method_decorator(
     name='get',
     decorator=extend_schema(
         tags=['Organizations'],

@@ -2,6 +2,7 @@ import { Button } from "@humansignal/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useUpdatePageTitle } from "@humansignal/core";
 import { useAuth } from "@humansignal/core/providers/AuthProvider";
+import { useAPI } from "../../../providers/ApiProvider";
 import { HeidiTips } from "../../../components/HeidiTips/HeidiTips";
 import { modal } from "../../../components/Modal/Modal";
 import { Space } from "../../../components/Space/Space";
@@ -19,20 +20,26 @@ import { SelectedUser } from "./SelectedUser";
 export const PeoplePage = () => {
   const apiSettingsModal = useRef();
   const toast = useToast();
+  const api = useAPI();
   const { user } = useAuth();
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedMember, setSelectedMember] = useState(null);
   const [invitationOpen, setInvitationOpen] = useState(false);
   const canInviteMembers = Boolean(user?.is_superuser);
 
+  // Check if current user can modify roles (superuser or owner)
+  // Owner check will be done on the backend; we show the UI for superusers by default
+  // and will attempt for others (backend will enforce permissions)
+  const canModifyRoles = user?.is_superuser;
+
   useUpdatePageTitle("People");
 
-  const selectUser = useCallback(
-    (user) => {
-      setSelectedUser(user);
+  const selectMember = useCallback(
+    (member) => {
+      setSelectedMember(member);
 
-      localStorage.setItem("selectedUser", user?.id);
+      localStorage.setItem("selectedUser", member?.user?.id);
     },
-    [setSelectedUser],
+    [setSelectedMember],
   );
 
   const apiTokensSettingsModalProps = useMemo(
@@ -49,6 +56,30 @@ export const PeoplePage = () => {
       ),
     }),
     [],
+  );
+
+  const handleRoleUpdate = useCallback(
+    async (member, newRole) => {
+      try {
+        const response = await api.callApi("updateMemberRole", {
+          params: {
+            pk: member.organization,
+            userPk: member.user.id,
+          },
+          body: { role: newRole },
+        });
+
+        selectMember(response.response);
+
+        toast.show({ message: "User role updated successfully" });
+
+        return response.response;
+      } catch (error) {
+        toast.show({ message: `Failed to update role: ${error.message || "Unknown error"}`, type: "error" });
+        throw error;
+      }
+    },
+    [api, selectMember, toast]
   );
 
   const showApiTokenSettingsModal = useCallback(() => {
@@ -86,13 +117,18 @@ export const PeoplePage = () => {
       </div>
       <div className={cn("people").elem("content").toClassName()}>
         <PeopleList
-          selectedUser={selectedUser}
+          selectedMember={selectedMember}
           defaultSelected={defaultSelected}
-          onSelect={(user) => selectUser(user)}
+          onSelect={(member) => selectMember(member)}
         />
 
-        {selectedUser ? (
-          <SelectedUser user={selectedUser} onClose={() => selectUser(null)} />
+        {selectedMember ? (
+          <SelectedUser
+            member={selectedMember}
+            onClose={() => selectMember(null)}
+            onUpdateRole={handleRoleUpdate}
+            canModifyRole={canModifyRoles}
+          />
         ) : (
           isFF(FF_LSDV_E_297) && <HeidiTips collection="organizationPage" />
         )}

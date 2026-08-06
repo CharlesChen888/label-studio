@@ -65,7 +65,11 @@ def save_user(request, next_page, user_form):
         org = Organization.objects.first()
         org.add_user(user)
     else:
+        from organizations.models import RoleChoice
         org = Organization.create_organization(created_by=user, title='Label Studio')
+        om = org.organizationmember_set.get(user=user)
+        om.role = RoleChoice.OWNER
+        om.save()
     user.active_organization = org
     user.save(update_fields=['active_organization'])
 

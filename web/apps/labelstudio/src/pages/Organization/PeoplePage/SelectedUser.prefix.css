@@ -31,6 +31,23 @@
     color: var(--color-neutral-content);
   }
 
+  &__info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__role-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  &__role-select {
+    min-width: 150px;
+  }
+
   &__section {
     & + & {
       margin-top: 16px;

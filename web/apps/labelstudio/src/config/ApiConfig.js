@@ -13,6 +13,7 @@ export const API_CONFIG = {
     // Organization
     memberships: "/organizations/:pk/memberships",
     userMemberships: "/organizations/:pk/memberships/:userPk",
+    updateMemberRole: "PATCH:/organizations/:pk/memberships/:userPk/role",
     inviteLink: "/invite",
     resetInviteLink: "POST:/invite/reset-token",
 
