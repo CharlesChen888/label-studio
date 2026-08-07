@@ -260,6 +260,7 @@ export class LSFWrapper {
       onDeletePrediction: this.onDeletePrediction,
       onSkipTask: this.onSkipTask,
       onUnskipTask: this.onUnskipTask,
+      onSubmitTaskComment: this.onSubmitTaskComment,
       onGroundTruth: this.onGroundTruth,
       onEntityCreate: this.onEntityCreate,
       onEntityDelete: this.onEntityDelete,
@@ -1206,6 +1207,40 @@ export class LSFWrapper {
     });
     await this.loadTask(task.id);
     this.datamanager.invoke("unskipTask");
+  };
+
+  onSubmitTaskComment = async (_, { comment }) => {
+    const taskID = this.task?.id;
+    if (!taskID) return;
+
+    const result = await this.withinLoadingState(async () => {
+      return this.datamanager.apiCall(
+        "updateTask",
+        { taskID },
+        {
+          body: {
+            last_submitted_comment: comment,
+          },
+        },
+        { errorHandler: errorHandlerAllowSpecialErrors },
+      );
+    });
+    const status = result?.$meta?.status;
+    this.showOperationToast(status, "Comment saved successfully", "Comment is not saved", result);
+
+    if (!result || result.error || status >= 400) {
+      return result;
+    }
+
+    this.task.last_submitted_comment = result.last_submitted_comment;
+    this.task.last_submitted_comment_at = result.last_submitted_comment_at;
+    this.lsf?.assignTask?.({
+      ...this.lsf.task,
+      last_submitted_comment: result.last_submitted_comment,
+      last_submitted_comment_at: result.last_submitted_comment_at,
+    });
+
+    return result;
   };
 
   shouldLoadNext = () => {

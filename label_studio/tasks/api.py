@@ -496,6 +496,13 @@ class TaskAPI(generics.RetrieveUpdateDestroyAPIView):
     def patch(self, request, *args, **kwargs):
         return super(TaskAPI, self).patch(request, *args, **kwargs)
 
+    def perform_update(self, serializer):
+        last_submitted_comment = serializer.validated_data.get('last_submitted_comment')
+        if last_submitted_comment is not None:
+            serializer.validated_data['last_submitted_comment_at'] = timezone.now()
+
+        serializer.save()
+
     @api_webhook_for_delete(WebhookAction.TASKS_DELETED)
     def delete(self, request, *args, **kwargs):
         return super(TaskAPI, self).delete(request, *args, **kwargs)

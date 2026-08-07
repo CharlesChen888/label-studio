@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { CurrentTask } from "../CurrentTask";
 import { FF_LEAP_1173 } from "../../../utils/feature-flags";
 const ff = mockFF();
@@ -66,8 +66,29 @@ describe("CurrentTask", () => {
       prevTask: mock(),
       nextTask: mock(),
       postponeTask: mock(),
+      submitTaskComment: mock(),
       queueTotal: 22,
     };
+  });
+
+  it("submits task-level comment from the new comment input", () => {
+    store.hasInterface.mockImplementation((interfaceName: string) =>
+      ["skip", "postpone", "topbar:prevnext", "topbar:task-counter"].includes(interfaceName),
+    );
+    store.task = {
+      id: 6616,
+      allow_skip: true,
+      allow_postpone: true,
+      last_submitted_comment: "",
+      last_submitted_comment_at: null,
+    };
+
+    render(<CurrentTask store={store} />);
+
+    fireEvent.change(screen.getByLabelText("Task comment"), { target: { value: "looks good" } });
+    fireEvent.click(screen.getByTestId("bottombar-task-comment-submit-button"));
+
+    expect(store.submitTaskComment).toHaveBeenCalledWith("looks good");
   });
 
   it("sets canPostpone correctly", () => {

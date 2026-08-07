@@ -32,6 +32,8 @@ task_response_example = {
     'comment_count': 0,
     'unresolved_comment_count': 0,
     'last_comment_updated_at': '2024-01-15T09:30:00Z',
+    'last_submitted_comment': 'needs manual review for edge case',
+    'last_submitted_comment_at': '2024-01-15T10:00:00Z',
     'updated_by': [{'user_id': 1}],
     'file_upload': '42d46c4c-my-pic.jpeg',
     'comment_authors': [1],
@@ -67,6 +69,8 @@ dm_task_response_example = {
     'comment_count': 0,
     'unresolved_comment_count': 0,
     'last_comment_updated_at': None,
+    'last_submitted_comment': '',
+    'last_submitted_comment_at': None,
     'project': 1,
     'comment_authors': [],
 }
@@ -111,6 +115,11 @@ task_request_schema = {
             'example': {'image': 'https://example.com/image.jpg', 'text': 'Hello, world!'},
         },
         'project': {'type': 'integer', 'description': 'Project ID'},
+        'last_submitted_comment': {
+            'type': 'string',
+            'description': 'Last comment submitted from the task labeling page',
+            'example': 'needs manual review for edge case',
+        },
     },
     'example': {
         'data': {'image': 'https://example.com/image.jpg', 'text': 'Hello, world!'},

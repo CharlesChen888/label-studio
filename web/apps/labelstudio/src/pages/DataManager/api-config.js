@@ -27,6 +27,7 @@ export const APIConfig = {
 
     /** Single task (sample) */
     task: "/../tasks/:taskID",
+    updateTask: "PATCH:/../tasks/:taskID",
 
     /** List of tasks (samples) in the dataset */
     tasks: "/../tasks",

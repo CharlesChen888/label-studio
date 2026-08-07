@@ -31,6 +31,11 @@ function onSkipTask() {}
 function onUnskipTask() {}
 
 /**
+ * Callback on task-level comment submit
+ */
+function onSubmitTaskComment() {}
+
+/**
  * Callback on task load
  */
 function onTaskLoad() {}
@@ -90,6 +95,7 @@ export default {
   onLabelStudioLoad,
   onSkipTask,
   onUnskipTask,
+  onSubmitTaskComment,
   onSubmitAnnotation,
   onSubmitDraft,
   onTaskLoad,

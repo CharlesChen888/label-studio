@@ -21,7 +21,9 @@
   &_with-history {
     height: 100%;
     display: grid;
-    grid-template: "id buttons" 1fr "id buttons" 1fr / 1fr min-content;
+    grid-template: "id comment buttons" / auto auto min-content;
+    align-items: center;
+    column-gap: var(--spacing-tight);
   }
 
   &__task-id {
@@ -52,6 +54,30 @@
       gap: var(--spacing-tight);
       margin-left: var(--spacing-tight);
     }
+  }
+
+  &__task-comment {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-tight);
+    grid-area: comment;
+  }
+
+  &__task-comment-input {
+    height: 32px;
+    min-width: 220px;
+    padding: 0 var(--spacing-tight);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: var(--corner-radius-small);
+    background-color: var(--color-neutral-surface);
+    color: var(--color-neutral-content);
+  }
+
+  &__task-comment-time {
+    @apply text-body-tiny;
+
+    color: var(--color-neutral-content-subtle);
+    white-space: nowrap;
   }
 
   &__prevnext {

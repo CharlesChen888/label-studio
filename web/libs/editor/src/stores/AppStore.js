@@ -737,6 +737,15 @@ export default types
       }
     }
 
+    function submitTaskComment(comment) {
+      const normalizedComment = comment?.trim();
+      if (!normalizedComment || self.isSubmitting || self.isLoading) return;
+
+      handleSubmittingFlag(async () => {
+        await getEnv(self).events.invoke("submitTaskComment", self, { comment: normalizedComment });
+      }, "Error during comment submit, try again");
+    }
+
     function skipTask(extraData) {
       if (self.isSubmitting || self.isLoading) return;
       const isEnterprise = window.APP_SETTINGS?.billing?.enterprise;
@@ -1155,6 +1164,7 @@ export default types
       waitForDraftSubmission,
       submitAnnotation,
       updateAnnotation,
+      submitTaskComment,
       acceptAnnotation,
       rejectAnnotation,
       handleCustomButton,

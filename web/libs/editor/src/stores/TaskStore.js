@@ -35,6 +35,14 @@ const TaskStore = types
      * Whether this task can be skipped. Defaults to true if undefined.
      */
     allow_skip: types.optional(types.maybeNull(types.boolean), true),
+    /**
+     * Last task-level comment submitted from the labeling page.
+     */
+    last_submitted_comment: types.optional(types.maybeNull(types.string), ""),
+    /**
+     * Timestamp of the last task-level comment submit.
+     */
+    last_submitted_comment_at: types.optional(types.maybeNull(types.string), null),
   })
   .views((self) => ({
     get app() {

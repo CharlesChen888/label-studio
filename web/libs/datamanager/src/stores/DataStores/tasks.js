@@ -39,6 +39,8 @@ export const create = (columns) => {
     default_selected_annotation: types.maybeNull(types.number),
     allow_postpone: types.maybeNull(types.boolean),
     allow_skip: types.optional(types.maybeNull(types.boolean), true),
+    last_submitted_comment: types.optional(types.maybeNull(types.string), ""),
+    last_submitted_comment_at: types.optional(types.maybeNull(types.string), null),
     unique_lock_id: types.maybeNull(types.string),
     updated_by: types.optional(types.array(Assignee), []),
     annotators_count: types.optional(types.maybeNull(types.number), 0),

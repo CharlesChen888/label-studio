@@ -19,6 +19,7 @@ export const CurrentTask = observer(({ store }) => {
 
   const [initialCommentLength, setInitialCommentLength] = useState(0);
   const [visibleComments, setVisibleComments] = useState(0);
+  const [taskComment, setTaskComment] = useState("");
 
   useEffect(() => {
     store.commentStore.setAddedCommentThisSession(false);
@@ -45,6 +46,14 @@ export const CurrentTask = observer(({ store }) => {
   const showCounter = store.hasInterface("topbar:task-counter");
 
   const task = store.task;
+  useEffect(() => {
+    setTaskComment(task?.last_submitted_comment ?? "");
+  }, [task?.id, task?.last_submitted_comment]);
+
+  const lastSubmittedCommentAt = task?.last_submitted_comment_at;
+  const isTaskCommentDirty = taskComment.trim() !== (task?.last_submitted_comment ?? "").trim();
+  const canSubmitTaskComment = Boolean(taskComment.trim()) && isTaskCommentDirty && !store.isSubmitting && !store.isLoading;
+
   const isEnterprise = window.APP_SETTINGS?.billing?.enterprise;
   const skipDisabled = isEnterprise ? task?.allow_skip === false : false;
   const userRole = window.APP_SETTINGS?.user?.role;
@@ -141,6 +150,29 @@ export const CurrentTask = observer(({ store }) => {
             </Tooltip>
           </div>
         )}
+        <div className={cn("current-task").elem("task-comment").toClassName()}>
+          <input
+            className={cn("current-task").elem("task-comment-input").toClassName()}
+            value={taskComment}
+            onChange={(event) => setTaskComment(event.target.value)}
+            placeholder="Add task comment"
+            aria-label="Task comment"
+          />
+          <Button
+            size="small"
+            variant="neutral"
+            disabled={!canSubmitTaskComment}
+            onClick={() => store.submitTaskComment(taskComment)}
+            data-testid="bottombar-task-comment-submit-button"
+          >
+            Submit Comment
+          </Button>
+          {lastSubmittedCommentAt ? (
+            <span className={cn("current-task").elem("task-comment-time").toClassName()}>
+              Last submitted: {new Date(lastSubmittedCommentAt).toLocaleString()}
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );

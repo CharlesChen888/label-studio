@@ -66,6 +66,7 @@ function configureApplication(params) {
     onDeletePrediction: params.onDeletePrediction ? odpCB : External.onDeletePrediction,
     onSkipTask: params.onSkipTask ? params.onSkipTask : External.onSkipTask,
     onUnskipTask: params.onUnskipTask ? params.onUnskipTask : External.onUnskipTask,
+    onSubmitTaskComment: params.onSubmitTaskComment ? params.onSubmitTaskComment : External.onSubmitTaskComment,
     onSubmitDraft: params.onSubmitDraft,
     onPresignUrlForProject: params.onPresignUrlForProject,
     onTaskLoad: params.onTaskLoad || External.onTaskLoad,

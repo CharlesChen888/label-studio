@@ -54,6 +54,8 @@ class TestTaskAPI(APITestCase):
             'comment_authors': [],
             'comment_count': 0,
             'last_comment_updated_at': None,
+            'last_submitted_comment': '',
+            'last_submitted_comment_at': None,
             'unresolved_comment_count': 0,
         }
 
@@ -96,8 +98,24 @@ class TestTaskAPI(APITestCase):
             'comment_authors': [],
             'comment_count': 0,
             'last_comment_updated_at': None,
+            'last_submitted_comment': '',
+            'last_submitted_comment_at': None,
             'unresolved_comment_count': 0,
         }
+
+    def test_patch_task_comment_updates_submit_time(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        payload = {'last_submitted_comment': 'final comment'}
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.patch(f'/api/tasks/{task.id}/', data=payload, format='json')
+        assert response.status_code == 200
+
+        task.refresh_from_db()
+        assert response.json()['last_submitted_comment'] == 'final comment'
+        assert response.json()['last_submitted_comment_at'] is not None
+        assert task.last_submitted_comment == 'final comment'
+        assert task.last_submitted_comment_at is not None
 
     def test_create_task_without_project_id_fails(self):
         """Test that creating a task without project ID fails with appropriate error message"""

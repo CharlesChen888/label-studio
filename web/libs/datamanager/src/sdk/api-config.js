@@ -60,6 +60,10 @@ export const APIConfig = {
 
     /** Single task (sample) */
     task: "/tasks/:taskID",
+    updateTask: {
+      path: "/../tasks/:taskID",
+      method: "patch",
+    },
 
     /** Next task (labelstream, default sequential) */
     nextTask: "/tasks/next",

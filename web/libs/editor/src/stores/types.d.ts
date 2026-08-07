@@ -188,6 +188,8 @@ export type MSTStore = {
     data: string;
     dataObj: Record<string, any>;
     agreement: number | null;
+    last_submitted_comment?: string | null;
+    last_submitted_comment_at?: string | null;
   };
 
   annotationStore: {
@@ -206,6 +208,7 @@ export type MSTStore = {
   handleCustomButton?: (button: CustomButtonType) => void;
   submitAnnotation: (options?: any) => void;
   updateAnnotation: (options?: any) => void;
+  submitTaskComment: (comment: string) => void;
   rejectAnnotation: (options?: any) => void;
   acceptAnnotation: (options?: any) => void;
   skipTask: (options?: any) => void;

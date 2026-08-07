@@ -175,6 +175,19 @@ class Task(TaskMixin, FsmHistoryStateModel):
         db_index=True,
         help_text='When the last comment was updated',
     )
+    last_submitted_comment = models.TextField(
+        _('last submitted comment'),
+        default='',
+        blank=True,
+        help_text='Last comment submitted from the task labeling page',
+    )
+    last_submitted_comment_at = models.DateTimeField(
+        _('last submitted comment at'),
+        default=None,
+        null=True,
+        db_index=True,
+        help_text='When the last task-level comment was submitted',
+    )
 
     objects = TaskManager()  # task manager by default
     prepared = PreparedTaskManager()  # task manager with filters, ordering, etc for data_manager app
