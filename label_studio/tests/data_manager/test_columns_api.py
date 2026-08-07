@@ -23,6 +23,9 @@ def _get_columns(business_client, label_config=None):
 
 def test_columns_api_returns_expected_ids(business_client):
     columns = _get_columns(business_client)
+    review_column = next(c for c in columns if c['id'] == 'annotation_accepted')
+
+    assert review_column['title'] == 'Review'
 
     assert [c['id'] for c in columns] == [
         'id',

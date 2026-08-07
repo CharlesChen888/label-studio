@@ -18,6 +18,7 @@ export { StringCell as Text } from "./StringCell";
 export { VideoCell as Video } from "./VideoCell";
 export { ProjectCell as Project } from "./ProjectCell";
 export { AgreementSelected } from "./AgreementSelected";
+export { AnnotationAccepted } from "./AnnotationAccepted";
 export { TaskState } from "./TaskState";
 export { PaymentStatus } from "./PaymentStatus/PaymentStatus";
 

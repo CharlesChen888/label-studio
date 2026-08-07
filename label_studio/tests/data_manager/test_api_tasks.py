@@ -142,7 +142,7 @@ def test_tasks_api_returns_annotation_accepted_state(business_client, project_id
 
     rows_by_id = {row['id']: row for row in response.json()['tasks']}
     assert rows_by_id[accepted_task.id]['annotation_accepted'] == 'accepted'
-    assert rows_by_id[rejected_task.id]['annotation_accepted'] is None
+    assert rows_by_id[rejected_task.id]['annotation_accepted'] == 'rejected'
 
 
 @pytest.mark.parametrize(

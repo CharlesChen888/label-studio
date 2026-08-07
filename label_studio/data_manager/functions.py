@@ -125,10 +125,10 @@ def get_all_columns(project, *_):
         },
         {
             'id': 'annotation_accepted',
-            'title': 'Annotation accepted',
+            'title': 'Review',
             'type': 'String',
             'target': 'tasks',
-            'help': 'Shows "accepted" when at least one annotation for the task is accepted',
+            'help': 'Shows the review outcome for the task annotations',
             'visibility_defaults': {'explore': True, 'labeling': False},
             'project_defined': False,
         },

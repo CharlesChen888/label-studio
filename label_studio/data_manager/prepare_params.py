@@ -135,7 +135,7 @@ class Column(Enum):
     ANNOTATION_ACCEPTED = (
         'annotation_accepted',
         'String',
-        'Shows "accepted" when at least one annotation for a task is accepted',
+        'Shows the review outcome for the task annotations',
     )
     COMPLETED_AT = 'completed_at', 'Datetime', 'Time when a task was fully annotated'
     AGREEMENT = 'agreement', 'Number', 'Agreement for annotation results for a specific task (Enterprise only)'

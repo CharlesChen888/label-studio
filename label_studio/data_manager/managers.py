@@ -304,6 +304,8 @@ def get_fields_for_evaluation(prepare_params, user, skip_regular=True):
 
     result = []
     result += get_fields_for_filter_ordering(prepare_params)
+    # Keep the task-list status column populated on the initial list query, not only after opening a task.
+    result.append('annotation_accepted')
 
     # visible fields calculation
     fields = prepare_params.data.get('hiddenColumns', None)
@@ -1085,9 +1087,11 @@ def annotate_annotation_accepted(queryset):
     accepted_annotation_exists = Annotation.objects.filter(
         task=OuterRef('pk'), last_action__in=[ActionType.ACCEPTED, ActionType.FIXED_AND_ACCEPTED]
     )
+    rejected_annotation_exists = Annotation.objects.filter(task=OuterRef('pk'), last_action=ActionType.REJECTED)
     return queryset.annotate(
         annotation_accepted=Case(
             When(Exists(accepted_annotation_exists), then=Value('accepted')),
+            When(Exists(rejected_annotation_exists), then=Value('rejected')),
             default=Value(None),
             output_field=TextField(),
         )
