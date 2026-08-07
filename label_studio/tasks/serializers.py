@@ -308,14 +308,20 @@ class AnnotationStubSerializer(FlexFieldsModelSerializer):
     - completed_by: user id for avatar lookup
     - ground_truth: for showing star indicator
     - was_cancelled: for skip queue / cancel-skip button display
+    - accepted_state: for accept/reject status badge on annotation tabs
     - is_stub: signals frontend to fetch full data on selection
     """
 
     created_username = serializers.SerializerMethodField(default='', read_only=True, help_text='Username string')
     created_ago = serializers.CharField(default='', read_only=True, help_text='Time delta from creation time')
     completed_by = AnonymizedUserPrimaryKeyRelatedField(required=False, queryset=User.objects.all())
+    accepted_state = serializers.SerializerMethodField(read_only=True, help_text='Accept/reject review status')
     # Mark this as a stub so frontend knows to fetch full data on selection
     is_stub = serializers.SerializerMethodField(read_only=True)
+
+    def get_accepted_state(self, annotation):
+        """Return the accepted_state derived from the annotation's last_action."""
+        return AnnotationSerializer._accepted_state_from_annotation(annotation)
 
     def get_created_username(self, annotation) -> str:
         user = annotation.completed_by
@@ -350,6 +356,7 @@ class AnnotationStubSerializer(FlexFieldsModelSerializer):
             'completed_by',
             'ground_truth',
             'was_cancelled',
+            'accepted_state',
             'is_stub',
         ]
 

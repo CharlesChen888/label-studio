@@ -104,6 +104,7 @@ class TestAnnotationStubSerializer(APITestCase):
             'completed_by',
             'ground_truth',  # needed for star indicator in UI
             'was_cancelled',  # needed for skip queue / cancel-skip button display
+            'accepted_state',  # needed for accept/reject status badge on annotation tabs
             'is_stub',
         ]
 
@@ -132,6 +133,39 @@ class TestAnnotationStubSerializer(APITestCase):
 
         # is_stub should NOT be in the full serializer
         assert 'is_stub' not in data
+
+    def test_stub_serializer_accepted_state_defaults_to_none(self):
+        """Test that accepted_state is None when annotation has no last_action."""
+        serializer = AnnotationStubSerializer(self.annotation)
+        data = serializer.data
+
+        # When there's no last_action, accepted_state should be None
+        assert 'accepted_state' in data
+        assert data['accepted_state'] is None
+
+    def test_stub_serializer_accepted_state_with_last_action(self):
+        """Test that accepted_state is correctly derived from last_action."""
+        # Set last_action to accept (value 3)
+        self.annotation.last_action = 3
+        self.annotation.save(update_fields=['last_action'])
+
+        serializer = AnnotationStubSerializer(self.annotation)
+        data = serializer.data
+
+        assert 'accepted_state' in data
+        assert data['accepted_state'] == 'accepted'
+
+    def test_stub_serializer_accepted_state_rejected(self):
+        """Test that accepted_state returns 'rejected' when last_action is reject (value 2)."""
+        # Set last_action to reject (value 2)
+        self.annotation.last_action = 2
+        self.annotation.save(update_fields=['last_action'])
+
+        serializer = AnnotationStubSerializer(self.annotation)
+        data = serializer.data
+
+        assert 'accepted_state' in data
+        assert data['accepted_state'] == 'rejected'
 
 
 class TestAnnotationsStubQueryParameter(APITestCase):
