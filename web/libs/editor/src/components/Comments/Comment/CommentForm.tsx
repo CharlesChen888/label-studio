@@ -1,5 +1,6 @@
-import { type FC, type MouseEventHandler, useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { type ChangeEvent, type FC, type MouseEventHandler, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { observer } from "mobx-react";
+import { isAnnotatorRole } from "@humansignal/core/lib/utils/user-role";
 
 import { LINK_COMMENT_MODE } from "../../../stores/Annotation/LinkingModes";
 import { CommentBase } from "../../../stores/Comment/Comment";
@@ -21,12 +22,13 @@ export type CommentFormProps = {
   commentStore: any;
   annotationStore: any;
   inline?: boolean;
+  statusOnly?: boolean;
 };
 
 const ROWS = 1;
 const MAX_ROWS = 4;
 
-export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annotationStore, inline = true }) => {
+export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annotationStore, inline = true, statusOnly = false }) => {
   const formRef = useRef<HTMLFormElement>(null);
   const actionRef = useRef<ActionRefValue>({});
   const clearTooltipMessage = () => commentStore.setTooltipMessage("");
@@ -98,6 +100,24 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
     [commentStore, annotationStore],
   );
 
+  const isReviewStatusReadOnly = isAnnotatorRole();
+  const annotationReviewStatus = commentStore.annotationReviewStatus ?? "accepted";
+
+  const onAnnotationReviewStatusChange = useCallback(
+    async (e: ChangeEvent<HTMLSelectElement>) => {
+      if (isReviewStatusReadOnly) return;
+      const status = e.target.value === "rejected" ? "rejected" : "accepted";
+      if (status === annotationReviewStatus) return;
+
+      try {
+        await commentStore.updateAnnotationReviewStatus(status);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [commentStore, annotationReviewStatus, isReviewStatusReadOnly],
+  );
+
   useEffect(() => {
     return () => clearTooltipMessage();
   }, []);
@@ -110,6 +130,26 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
     commentStore.setInputRef(actionRef.current?.el);
     commentStore.setCommentFormSubmit(() => onSubmit());
   }, [actionRef, commentStore]);
+
+  if (statusOnly) {
+    return (
+      <div className={cn("comment-form-new").elem("review-status-row").toClassName()}>
+        <label className={cn("comment-form-new").elem("review-status-label").toClassName()} htmlFor="annotation-review-status">
+          Annotation Status
+        </label>
+        <select
+          id="annotation-review-status"
+          className={cn("comment-form-new").elem("review-status-select").toClassName()}
+          value={annotationReviewStatus}
+          onChange={onAnnotationReviewStatusChange}
+          disabled
+        >
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+    );
+  }
 
   const currentLinkingComment = annotationStore.selected.currentLinkingMode?.comment;
   const currentComment = getCurrentComment();
@@ -150,6 +190,21 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
       className={cn("comment-form-new").mod({ inline, linked: !!region }).toClassName()}
       onSubmit={onSubmit}
     >
+      <div className={cn("comment-form-new").elem("review-status-row").toClassName()}>
+        <label className={cn("comment-form-new").elem("review-status-label").toClassName()} htmlFor="annotation-review-status">
+          Annotation Status
+        </label>
+        <select
+          id="annotation-review-status"
+          className={cn("comment-form-new").elem("review-status-select").toClassName()}
+          value={annotationReviewStatus}
+          onChange={onAnnotationReviewStatusChange}
+          disabled={isReviewStatusReadOnly}
+        >
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
       <div className={cn("comment-form-new").elem("text-row").toClassName()}>
         <TextArea
           actionRef={actionRef}

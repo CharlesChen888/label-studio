@@ -2,11 +2,13 @@ import unittest
 from unittest.mock import patch
 
 from core.feature_flags import flag_set
+from organizations.models import OrganizationMember, RoleChoice
 from organizations.tests.factories import OrganizationFactory
 from projects.models import Project
 from projects.tests.factories import ProjectFactory
 from rest_framework.test import APITestCase
 from tasks.tests.factories import AnnotationFactory, CommentFactory, PredictionFactory, TaskFactory
+from users.tests.factories import UserFactory
 
 
 class TestTaskAPI(APITestCase):
@@ -219,6 +221,42 @@ class TestCommentAPI(APITestCase):
         assert task.unresolved_comment_count == 0
         assert task.last_comment_updated_at is None
         assert list(task.comment_authors.values_list('id', flat=True)) == []
+
+    def test_owner_can_update_annotation_accepted_state(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user, last_action='submitted')
+
+        self.client.force_authenticate(user=self.user)
+        patch_response = self.client.patch(
+            f'/api/annotations/{annotation.id}/',
+            data={'accepted_state': 'rejected'},
+            format='json',
+        )
+
+        assert patch_response.status_code == 200
+        assert patch_response.json()['accepted_state'] == 'rejected'
+
+        annotation.refresh_from_db()
+        assert annotation.last_action == 'rejected'
+
+    def test_annotator_cannot_update_annotation_accepted_state(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user, last_action='submitted')
+        annotator = UserFactory(active_organization=self.organization)
+        self.organization.add_user(annotator, role=RoleChoice.ANNOTATOR)
+        OrganizationMember.objects.filter(user=self.user, organization=self.organization).update(role=RoleChoice.OWNER)
+
+        self.client.force_authenticate(user=annotator)
+        patch_response = self.client.patch(
+            f'/api/annotations/{annotation.id}/',
+            data={'accepted_state': 'rejected'},
+            format='json',
+        )
+
+        assert patch_response.status_code == 403
+
+        annotation.refresh_from_db()
+        assert annotation.last_action == 'submitted'
 
 
 class TestTaskAPIResolveUri(APITestCase):

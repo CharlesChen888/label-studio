@@ -45,6 +45,7 @@ export const Comments: FC<{
     // It prevents blinking on opening comments tab for the same annotation when comments are already there
     const listCommentsOptions: any = { mounted, suppressClearComments: commentStore.isRelevantList };
     await commentStore.listComments(listCommentsOptions);
+    await commentStore.loadAnnotationReviewStatus();
 
     if (!mounted.current) return;
 
@@ -95,7 +96,11 @@ export const Comments: FC<{
 
   return (
     <div className={cn("comments").toClassName()}>
-      {!isAnnotatorRole() && <CommentForm commentStore={commentStore} annotationStore={annotationStore} inline />}
+      {isAnnotatorRole() ? (
+        <CommentForm commentStore={commentStore} annotationStore={annotationStore} inline statusOnly />
+      ) : (
+        <CommentForm commentStore={commentStore} annotationStore={annotationStore} inline />
+      )}
       {/* FIT-720: Show skeleton loader while fetching comments */}
       {isLoading ? <CommentsLoadingSkeleton /> : <CommentsList commentStore={commentStore} />}
     </div>

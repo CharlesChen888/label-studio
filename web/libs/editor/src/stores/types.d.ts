@@ -121,8 +121,10 @@ type MSTAnnotation = {
   isLinkingMode: boolean;
   linkingMode: "create_relation" | "link_to_comment";
   isNonEditableDraft: boolean;
+  acceptedState?: "accepted" | "rejected" | "fixed" | null;
 
   submissionInProgress: () => void;
+  setAcceptedState?: (value: "accepted" | "rejected" | "fixed" | null) => void;
 };
 
 type MSTUserExtended = {
@@ -171,10 +173,13 @@ type MSTCommentStore = {
   commentFormSubmit: () => Promise<void>;
   setTooltipMessage: (message: string) => void;
   currentComment: any;
+  annotationReviewStatus: "accepted" | "rejected";
   addedCommentThisSession: boolean;
   isHighlighting: boolean;
   isRelevantList: boolean;
   listComments: (options: { mounted?: { current: boolean }; suppressClearComments: boolean }) => Promise<void>;
+  loadAnnotationReviewStatus: () => Promise<void>;
+  updateAnnotationReviewStatus: (status: "accepted" | "rejected") => Promise<void>;
   restoreCommentsFromCache: (cacheKey: string) => void;
 };
 

@@ -24,6 +24,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SkipField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.settings import api_settings
+from tasks.choices import ActionType
 from tasks.exceptions import AnnotationDuplicateError
 from tasks.models import Annotation, AnnotationDraft, Comment, Prediction, PredictionMeta, Task
 from tasks.ordering import apply_annotation_ordering, apply_prediction_ordering
@@ -170,10 +171,30 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         help_text='Last user who updated this annotation',
     )
     unique_id = serializers.CharField(required=False, write_only=True)
+    accepted_state = serializers.ChoiceField(
+        choices=[('accepted', 'accepted'), ('rejected', 'rejected')],
+        required=False,
+    )
 
-    def create(self, *args, **kwargs):
+    @staticmethod
+    def _last_action_from_accepted_state(accepted_state):
+        if accepted_state == 'rejected':
+            return ActionType.REJECTED
+        return ActionType.ACCEPTED
+
+    @staticmethod
+    def _accepted_state_from_annotation(annotation):
+        if annotation.last_action == ActionType.REJECTED:
+            return 'rejected'
+        return 'accepted'
+
+    def create(self, validated_data):
+        accepted_state = validated_data.pop('accepted_state', None)
+        if accepted_state is not None:
+            validated_data['last_action'] = self._last_action_from_accepted_state(accepted_state)
+
         try:
-            return super().create(*args, **kwargs)
+            return super().create(validated_data)
         except IntegrityError as e:
             errors = [
                 'UNIQUE constraint failed: task_completion.unique_id',
@@ -199,6 +220,11 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         # FIT-1669: collapse `(id, from_name, type)` collisions at the write boundary
         # so the annotation record never persists duplicate-id rows.
         return dedupe_annotation_result_list(data)
+
+    def validate_accepted_state(self, value):
+        if value not in {'accepted', 'rejected'}:
+            raise ValidationError('accepted_state must be "accepted" or "rejected"')
+        return value
 
     def _resolve_project_for_validation(self, data):
         if 'task' in data:
@@ -244,6 +270,7 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
     def to_representation(self, obj):
         """Remove state field if feature flags are disabled"""
         ret = super().to_representation(obj)
+        ret['accepted_state'] = self._accepted_state_from_annotation(obj)
         user = CurrentContext.get_user()
         if not (
             flag_set('fflag_feat_fit_568_finite_state_management', user=user)
@@ -251,6 +278,12 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         ):
             ret.pop('state', None)
         return ret
+
+    def update(self, instance, validated_data):
+        accepted_state = validated_data.pop('accepted_state', None)
+        if accepted_state is not None:
+            validated_data['last_action'] = self._last_action_from_accepted_state(accepted_state)
+        return super().update(instance, validated_data)
 
     class Meta:
         model = Annotation

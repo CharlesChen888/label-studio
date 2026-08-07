@@ -1123,6 +1123,15 @@ class AnnotationAPI(generics.RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         # save user history with annotator_id, time & annotation result
         annotation = self.get_object()
+
+        if 'accepted_state' in request.data:
+            om = OrganizationMember.objects.get(
+                user=request.user,
+                organization=request.user.active_organization,
+            )
+            if om.role == RoleChoice.ANNOTATOR:
+                raise PermissionDenied('Annotators cannot change annotation accepted status.')
+
         # use updated instead of save to avoid duplicated signals
         Annotation.objects.filter(id=annotation.id).update(updated_by=request.user)
 

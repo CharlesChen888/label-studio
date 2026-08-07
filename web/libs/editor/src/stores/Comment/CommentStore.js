@@ -10,6 +10,7 @@ export const CommentStore = types
     loading: types.optional(types.maybeNull(types.string), "list"),
     comments: types.optional(types.array(Comment), []),
     highlightedComment: types.safeReference(Comment),
+    annotationReviewStatus: types.optional(types.enumeration(["accepted", "rejected"]), "accepted"),
   })
   .volatile(() => ({
     addedCommentThisSession: false,
@@ -159,6 +160,11 @@ export const CommentStore = types
 
     function setLoading(loading = null) {
       self.loading = loading;
+    }
+
+    function setAnnotationReviewStatus(status = "accepted") {
+      self.annotationReviewStatus = status === "rejected" ? "rejected" : "accepted";
+      self.annotation?.setAcceptedState?.(self.annotationReviewStatus);
     }
 
     function setTooltipMessage(tooltipMessage) {
@@ -431,6 +437,42 @@ export const CommentStore = types
       }
     });
 
+    const loadAnnotationReviewStatus = flow(function* () {
+      if (!self.annotationId) {
+        setAnnotationReviewStatus("accepted");
+        return;
+      }
+
+      try {
+        const [status] = yield self.sdk.invoke("annotation-review-status:get", { annotation: self.annotationId });
+        if (!isAlive(self)) return;
+        setAnnotationReviewStatus(status);
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    const updateAnnotationReviewStatus = flow(function* (status) {
+      if (!self.annotationId) return;
+
+      const normalizedStatus = status === "rejected" ? "rejected" : "accepted";
+      const previousStatus = self.annotationReviewStatus;
+
+      setAnnotationReviewStatus(normalizedStatus);
+
+      try {
+        const [savedStatus] = yield self.sdk.invoke("annotation-review-status:update", {
+          annotation: self.annotationId,
+          acceptedState: normalizedStatus,
+        });
+        if (!isAlive(self)) return;
+        setAnnotationReviewStatus(savedStatus);
+      } catch (err) {
+        setAnnotationReviewStatus(previousStatus);
+        throw err;
+      }
+    });
+
     return {
       serialize,
       hasCache,
@@ -442,6 +484,7 @@ export const CommentStore = types
       setCommentFormSubmit,
       setInputRef,
       setLoading,
+      setAnnotationReviewStatus,
       setTooltipMessage,
       updateAnnotationCommentCounts,
       replaceId,
@@ -452,6 +495,8 @@ export const CommentStore = types
       addComment,
       setComments,
       listComments,
+      loadAnnotationReviewStatus,
+      updateAnnotationReviewStatus,
       setHighlightedComment,
     };
   });

@@ -187,6 +187,7 @@ const _Annotation = types
 
     ground_truth: types.optional(types.boolean, false),
     skipped: false,
+    acceptedState: types.maybeNull(types.enumeration(["accepted", "rejected", "fixed"])),
 
     // This field stores all data that affects undo/redo history
     // It should contain real objects to be able to work with them through snapshots
@@ -493,6 +494,14 @@ const _Annotation = types
 
     setCommentCount(val) {
       self.comment_count = val;
+    },
+
+    setAcceptedState(value) {
+      if (value === "accepted" || value === "rejected" || value === "fixed") {
+        self.acceptedState = value;
+        return;
+      }
+      self.acceptedState = null;
     },
 
     setGroundTruth(value, ivokeEvent = true) {

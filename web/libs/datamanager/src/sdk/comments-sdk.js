@@ -6,13 +6,26 @@ export class CommentsSdk {
   }
 
   bindEventHandlers() {
-    ["comments:create", "comments:update", "comments:delete", "comments:list"].forEach((evt) => this.lsf.off(evt));
+    [
+      "comments:create",
+      "comments:update",
+      "comments:delete",
+      "comments:list",
+      "annotation-review-status:get",
+      "annotation-review-status:update",
+    ].forEach((evt) => this.lsf.off(evt));
 
     this.lsf.on("comments:create", this.createComment);
     this.lsf.on("comments:update", this.updateComment);
     this.lsf.on("comments:delete", this.deleteComment);
     this.lsf.on("comments:list", this.listComments);
+    this.lsf.on("annotation-review-status:get", this.getAnnotationReviewStatus);
+    this.lsf.on("annotation-review-status:update", this.updateAnnotationReviewStatus);
   }
+
+  normalizeAnnotationReviewStatus = (annotation) => {
+    return annotation?.accepted_state === "rejected" ? "rejected" : "accepted";
+  };
 
   createComment = async (comment) => {
     const body = {
@@ -90,5 +103,25 @@ export class CommentsSdk {
     const res = await this.dm.apiCall("deleteComment", { id: comment.id }, { body: comment });
 
     return res;
+  };
+
+  getAnnotationReviewStatus = async ({ annotation }) => {
+    if (!annotation) return "accepted";
+
+    const annotationData = await this.dm.apiCall("fetchAnnotation", { annotationID: annotation });
+
+    return this.normalizeAnnotationReviewStatus(annotationData);
+  };
+
+  updateAnnotationReviewStatus = async ({ annotation, acceptedState }) => {
+    if (!annotation) return "accepted";
+
+    const annotationData = await this.dm.apiCall(
+      "updateAnnotation",
+      { annotationID: annotation },
+      { body: { accepted_state: acceptedState } },
+    );
+
+    return this.normalizeAnnotationReviewStatus(annotationData);
   };
 }
