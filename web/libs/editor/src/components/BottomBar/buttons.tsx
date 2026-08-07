@@ -7,7 +7,7 @@
 import { inject, observer } from "mobx-react";
 import type React from "react";
 import { memo, type ReactElement } from "react";
-import { Tooltip, Button } from "@humansignal/ui";
+import { Tooltip, Button, type ButtonProps } from "@humansignal/ui";
 import { IconInfoOutline } from "@humansignal/icons";
 import type { MSTStore } from "../../stores/types";
 import { FF_FIT_1304_STRICT_OVERLAP, isFF } from "../../utils/feature-flags";
@@ -91,6 +91,68 @@ export const RejectButtonDefinition = {
   // @todo we need this for types compatibility, but better to fix CustomButtonType
   disabled: false,
 };
+
+type RejectButtonProps = {
+  disabled: boolean;
+  store: MSTStore;
+  annotation: {
+    id: string;
+    submissionInProgress?: () => void;
+  };
+  variant?: ButtonProps["variant"];
+  look?: ButtonProps["look"];
+  className?: string;
+  onBeforeReject?: () => void;
+};
+
+export const RejectButton = memo(
+  observer(({ disabled, store, annotation, variant, look, className, onBeforeReject }: RejectButtonProps) => {
+    return (
+      <Button
+        key="reject"
+        aria-label="reject-annotation"
+        variant={variant ?? "negative"}
+        look={look ?? "outlined"}
+        className={className}
+        disabled={disabled}
+        tooltip="Reject annotation: [ Ctrl+Space ]"
+        onClick={async () => {
+          onBeforeReject?.();
+          const selected = store.annotationStore?.selected;
+
+          if (store.hasInterface("comments:reject")) {
+            const { addedCommentThisSession, currentComment, commentFormSubmit } = store.commentStore;
+            const comment = currentComment[annotation.id];
+            const commentText = (comment?.text ?? comment)?.trim();
+
+            if (addedCommentThisSession) {
+              selected?.submissionInProgress();
+              store.rejectAnnotation({});
+              return;
+            }
+
+            if (commentText) {
+              selected?.submissionInProgress();
+              await commentFormSubmit();
+              store.rejectAnnotation({});
+              return;
+            }
+
+            store.commentStore.setTooltipMessage("Please enter a comment before rejecting");
+            return;
+          }
+
+          selected?.submissionInProgress();
+          await store.commentStore.commentFormSubmit();
+          store.rejectAnnotation({});
+        }}
+        data-testid="bottombar-reject-button"
+      >
+        Reject
+      </Button>
+    );
+  }),
+);
 
 type SkipButtonProps = {
   disabled: boolean;

@@ -19,6 +19,7 @@ import {
   AcceptButton,
   ButtonTooltip,
   controlsInjector,
+  RejectButton,
   RejectButtonDefinition,
   SkipButton,
   UnskipButton,
@@ -72,6 +73,7 @@ const ControlButton = observer(({ button, disabled, onClick, variant, look }: Co
 export const Controls = controlsInjector<{ annotation: MSTAnnotation }>(
   observer(({ store, history, annotation }) => {
     const isReview = store.hasInterface("review") || annotation.canBeReviewed;
+    const useTaskReviewButtons = isReview && store.hasInterface("topbar:prevnext");
     const isNotQuickView = store.hasInterface("topbar:prevnext");
     const historySelected = isDefined(store.annotationStore.selectedHistory);
     const {
@@ -167,7 +169,7 @@ export const Controls = controlsInjector<{ annotation: MSTAnnotation }>(
       return <div className={cn("controls").toClassName()}>{buttons}</div>;
     }
 
-    if (isReview) {
+    if (isReview && !useTaskReviewButtons) {
       const customRejectButtons = toArray(customButtons.get("reject"));
       const hasCustomReject = customRejectButtons.length > 0;
       const originalRejectButton = RejectButtonDefinition;
@@ -178,21 +180,28 @@ export const Controls = controlsInjector<{ annotation: MSTAnnotation }>(
         : [originalRejectButton];
 
       rejectButtons.forEach((button) => {
-        const action = hasCustomReject ? () => store.handleCustomButton?.(button) : () => store.rejectAnnotation({});
+        if (hasCustomReject) {
+          buttons.push(
+            <ControlButton
+              key={button.name}
+              button={button}
+              disabled={reviewDisabled}
+              onClick={async (e) => {
+                const selected = store.annotationStore?.selected;
 
-        const onReject = async (e: React.MouseEvent) => {
-          const selected = store.annotationStore?.selected;
-
-          if (store.hasInterface("comments:reject")) {
-            handleActionWithComments(e, action, "Please enter a comment before rejecting");
-          } else {
-            selected?.submissionInProgress();
-            await store.commentStore.commentFormSubmit();
-            action();
-          }
-        };
-
-        buttons.push(<ControlButton key={button.name} button={button} disabled={reviewDisabled} onClick={onReject} />);
+                if (store.hasInterface("comments:reject")) {
+                  handleActionWithComments(e, () => store.handleCustomButton?.(button), "Please enter a comment before rejecting");
+                } else {
+                  selected?.submissionInProgress();
+                  await store.commentStore.commentFormSubmit();
+                  store.handleCustomButton?.(button);
+                }
+              }}
+            />,
+          );
+        } else {
+          buttons.push(<RejectButton key={button.name} disabled={reviewDisabled} store={store} annotation={annotation} />);
+        }
       });
       buttons.push(<AcceptButton key="review-accept" disabled={reviewDisabled} history={history} store={store} />);
     } else if (annotation.skipped) {

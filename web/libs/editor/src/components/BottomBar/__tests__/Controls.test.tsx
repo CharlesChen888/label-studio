@@ -339,6 +339,29 @@ describe("Controls", () => {
     expect(getByLabelText("reject-annotation")).not.toBeDisabled();
   });
 
+  test("hides review buttons in controls when task review buttons are rendered in the task bar", () => {
+    mockStore.hasInterface = (a: string) => ["review", "controls", "topbar:prevnext"].includes(a);
+
+    const annotation = {
+      ...mockAnnotation,
+      canBeReviewed: true,
+      draftSelected: true,
+      versions: {},
+      submissionInProgress: mock(),
+      history: { canUndo: false },
+    };
+    mockStore.annotationStore.selected = annotation;
+
+    const { queryByLabelText } = render(
+      <Provider store={mockStore}>
+        <Controls annotation={annotation} />
+      </Provider>,
+    );
+
+    expect(queryByLabelText("accept-annotation")).not.toBeInTheDocument();
+    expect(queryByLabelText("reject-annotation")).not.toBeInTheDocument();
+  });
+
   test("Skip triggers skipTask when allow_skip=false but user is Manager (MA) in LSE", async () => {
     setupAppSettings({ role: "MA", enterprise: true });
     mockStore.hasInterface = (a: string) => a === "skip";

@@ -36,6 +36,11 @@ _api_drafts_urlpatterns = [
     path('<int:pk>/', api.AnnotationDraftAPI.as_view(), name='draft-detail'),
 ]
 
+_api_comments_urlpatterns = [
+    path('', api.CommentsListAPI.as_view(), name='comment-list'),
+    path('<int:pk>/', api.CommentAPI.as_view(), name='comment-detail'),
+]
+
 _api_predictions_urlpatterns = router.urls
 
 
@@ -44,5 +49,6 @@ urlpatterns = [
     # TODO: these should be moved to the separate apps
     path('api/annotations/', include((_api_annotations_urlpatterns, app_name), namespace='api-annotations')),
     path('api/drafts/', include((_api_drafts_urlpatterns, app_name), namespace='api-drafts')),
+    path('api/comments/', include((_api_comments_urlpatterns, app_name), namespace='api-comments')),
     path('api/', include((_api_predictions_urlpatterns, app_name), namespace='api-predictions')),
 ]

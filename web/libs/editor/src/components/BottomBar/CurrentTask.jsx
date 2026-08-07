@@ -6,6 +6,7 @@ import { cn } from "../../utils/bem";
 import { FF_DEV_4174, FF_LEAP_1173, FF_TASK_COUNT_FIX, isFF } from "../../utils/feature-flags";
 import { guidGenerator } from "../../utils/unique";
 import { isDefined } from "../../utils/utilities";
+import { AcceptButton, RejectButton } from "./buttons";
 import "./CurrentTask.prefix.css";
 import { reaction } from "mobx";
 
@@ -19,8 +20,6 @@ export const CurrentTask = observer(({ store }) => {
 
   const [initialCommentLength, setInitialCommentLength] = useState(0);
   const [visibleComments, setVisibleComments] = useState(0);
-  const [taskComment, setTaskComment] = useState("");
-
   useEffect(() => {
     store.commentStore.setAddedCommentThisSession(false);
 
@@ -44,15 +43,16 @@ export const CurrentTask = observer(({ store }) => {
 
   const historyEnabled = store.hasInterface("topbar:prevnext");
   const showCounter = store.hasInterface("topbar:task-counter");
+  const annotation = store.annotationStore.selected;
+  const isReview = store.hasInterface("review") || annotation?.canBeReviewed;
+  const historySelected = isDefined(store.annotationStore.selectedHistory);
+  const viewingSubmittedWhileDraftExists =
+    !historySelected && Boolean(annotation?.versions?.draft) && !annotation?.draftSelected;
+  const taskReviewDisabled =
+    !annotation?.editable || store.isSubmitting || historySelected || viewingSubmittedWhileDraftExists;
+  const showTaskReviewButtons = Boolean(historyEnabled && isReview && annotation);
 
   const task = store.task;
-  useEffect(() => {
-    setTaskComment(task?.last_submitted_comment ?? "");
-  }, [task?.id, task?.last_submitted_comment]);
-
-  const lastSubmittedCommentAt = task?.last_submitted_comment_at;
-  const isTaskCommentDirty = taskComment.trim() !== (task?.last_submitted_comment ?? "").trim();
-  const canSubmitTaskComment = Boolean(taskComment.trim()) && isTaskCommentDirty && !store.isSubmitting && !store.isLoading;
 
   const isEnterprise = window.APP_SETTINGS?.billing?.enterprise;
   const skipDisabled = isEnterprise ? task?.allow_skip === false : false;
@@ -150,29 +150,12 @@ export const CurrentTask = observer(({ store }) => {
             </Tooltip>
           </div>
         )}
-        <div className={cn("current-task").elem("task-comment").toClassName()}>
-          <input
-            className={cn("current-task").elem("task-comment-input").toClassName()}
-            value={taskComment}
-            onChange={(event) => setTaskComment(event.target.value)}
-            placeholder="Add task comment"
-            aria-label="Task comment"
-          />
-          <Button
-            size="small"
-            variant="neutral"
-            disabled={!canSubmitTaskComment}
-            onClick={() => store.submitTaskComment(taskComment)}
-            data-testid="bottombar-task-comment-submit-button"
-          >
-            Submit Comment
-          </Button>
-          {lastSubmittedCommentAt ? (
-            <span className={cn("current-task").elem("task-comment-time").toClassName()}>
-              Last submitted: {new Date(lastSubmittedCommentAt).toLocaleString()}
-            </span>
-          ) : null}
-        </div>
+        {showTaskReviewButtons ? (
+          <div className={cn("current-task").elem("task-review").toClassName()}>
+            <RejectButton disabled={taskReviewDisabled} store={store} annotation={annotation} look="outlined" />
+            <AcceptButton disabled={taskReviewDisabled} history={annotation.history} store={store} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

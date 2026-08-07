@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from projects import models as project_models
 from projects.models import ProjectSummary
 from tasks.models import Task
 from tests.conftest import project_choices
@@ -193,6 +194,79 @@ def test_delete_tasks_and_annotations_clears_created_drafts_annotations_and_labe
     s.refresh_from_db()
     for field in ['created_labels', 'created_labels_drafts', 'created_annotations']:
         assert getattr(s, field) == {}
+
+
+def test_sqlite_skips_atomic_draft_summary_update(monkeypatch, business_client):
+    project = make_project(project_choices(), business_client.user, use_ml_backend=False)
+    summary = project.summary
+
+    monkeypatch.setattr(project_models, 'flag_set', lambda *args, **kwargs: True)
+    monkeypatch.setattr(project_models, '_supports_atomic_jsonb_summary_updates', lambda: False)
+
+    called = False
+
+    def fail_if_called(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError('atomic jsonb update should be skipped on sqlite')
+
+    monkeypatch.setattr(summary, '_atomic_update_created_labels_drafts', fail_if_called)
+
+    summary.update_created_labels_drafts(
+        [
+            {
+                'result': [
+                    {
+                        'from_name': 'some',
+                        'to_name': 'x',
+                        'type': 'choices',
+                        'value': {'choices': ['Opossum']},
+                    }
+                ]
+            }
+        ]
+    )
+
+    summary.refresh_from_db()
+    assert called is False
+    assert summary.created_labels_drafts == {'some': {'Opossum': 1}}
+
+
+def test_sqlite_skips_atomic_annotation_summary_update(monkeypatch, business_client):
+    project = make_project(project_choices(), business_client.user, use_ml_backend=False)
+    summary = project.summary
+
+    monkeypatch.setattr(project_models, 'flag_set', lambda *args, **kwargs: True)
+    monkeypatch.setattr(project_models, '_supports_atomic_jsonb_summary_updates', lambda: False)
+
+    called = False
+
+    def fail_if_called(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError('atomic jsonb update should be skipped on sqlite')
+
+    monkeypatch.setattr(summary, '_atomic_update_created_annotations_and_labels', fail_if_called)
+
+    summary.update_created_annotations_and_labels(
+        [
+            {
+                'result': [
+                    {
+                        'from_name': 'some',
+                        'to_name': 'x',
+                        'type': 'choices',
+                        'value': {'choices': ['Opossum']},
+                    }
+                ]
+            }
+        ]
+    )
+
+    summary.refresh_from_db()
+    assert called is False
+    assert summary.created_annotations == {'some|x|choices': 1}
+    assert summary.created_labels == {'some': {'Opossum': 1}}
 
 
 def test_logged_out_user_cannot_reset_summary(business_client):

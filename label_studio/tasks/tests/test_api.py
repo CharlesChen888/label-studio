@@ -6,7 +6,7 @@ from organizations.tests.factories import OrganizationFactory
 from projects.models import Project
 from projects.tests.factories import ProjectFactory
 from rest_framework.test import APITestCase
-from tasks.tests.factories import AnnotationFactory, PredictionFactory, TaskFactory
+from tasks.tests.factories import AnnotationFactory, CommentFactory, PredictionFactory, TaskFactory
 
 
 class TestTaskAPI(APITestCase):
@@ -146,6 +146,79 @@ class TestTaskAPI(APITestCase):
         response_data = response.json()
         assert response_data['project'] == self.project.id
         assert response_data['data'] == {'text': 'test task'}
+
+
+class TestCommentAPI(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.organization = OrganizationFactory()
+        cls.project = ProjectFactory(organization=cls.organization)
+        cls.user = cls.organization.created_by
+
+    def test_create_and_list_annotation_comments(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user)
+
+        self.client.force_authenticate(user=self.user)
+        create_response = self.client.post(
+            '/api/comments/',
+            data={
+                'annotation': annotation.id,
+                'text': 'Needs review',
+                'region_ref': {'region_id': 'abc'},
+                'classifications': ['issue'],
+            },
+            format='json',
+        )
+
+        assert create_response.status_code == 201
+        assert create_response.json()['created_by'] == self.user.id
+        assert create_response.json()['annotation'] == annotation.id
+
+        task.refresh_from_db()
+        assert task.comment_count == 1
+        assert task.unresolved_comment_count == 1
+        assert task.last_comment_updated_at is not None
+        assert list(task.comment_authors.values_list('id', flat=True)) == [self.user.id]
+
+        list_response = self.client.get(
+            f'/api/comments/?ordering=-id&expand_created_by=true&annotation={annotation.id}&project={self.project.id}'
+        )
+
+        assert list_response.status_code == 200
+        payload = list_response.json()
+        assert len(payload) == 1
+        assert payload[0]['text'] == 'Needs review'
+        assert payload[0]['created_by']['id'] == self.user.id
+
+    def test_patch_and_delete_comment_updates_task_counters(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user)
+        comment = CommentFactory(task=task, project=self.project, annotation=annotation, created_by=self.user)
+
+        self.client.force_authenticate(user=self.user)
+        patch_response = self.client.patch(
+            f'/api/comments/{comment.id}/',
+            data={'is_resolved': True},
+            format='json',
+        )
+
+        assert patch_response.status_code == 200
+        assert patch_response.json()['is_resolved'] is True
+        assert patch_response.json()['resolved_at'] is not None
+
+        task.refresh_from_db()
+        assert task.comment_count == 1
+        assert task.unresolved_comment_count == 0
+
+        delete_response = self.client.delete(f'/api/comments/{comment.id}/')
+        assert delete_response.status_code == 204
+
+        task.refresh_from_db()
+        assert task.comment_count == 0
+        assert task.unresolved_comment_count == 0
+        assert task.last_comment_updated_at is None
+        assert list(task.comment_authors.values_list('id', flat=True)) == []
 
 
 class TestTaskAPIResolveUri(APITestCase):

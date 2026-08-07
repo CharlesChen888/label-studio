@@ -25,7 +25,7 @@ from rest_framework.fields import SkipField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.settings import api_settings
 from tasks.exceptions import AnnotationDuplicateError
-from tasks.models import Annotation, AnnotationDraft, Prediction, PredictionMeta, Task
+from tasks.models import Annotation, AnnotationDraft, Comment, Prediction, PredictionMeta, Task
 from tasks.ordering import apply_annotation_ordering, apply_prediction_ordering
 from tasks.result_utils import dedupe_annotation_result_list, sanitize_null_bytes
 from tasks.validation import TaskValidator
@@ -1064,6 +1064,88 @@ class AnnotationDraftSerializer(ModelSerializer):
     class Meta:
         model = AnnotationDraft
         fields = '__all__'
+
+
+class CommentSerializer(ModelSerializer):
+    created_by = serializers.SerializerMethodField()
+    updated_by = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if user and getattr(user, 'active_organization', None):
+            organization = user.active_organization
+            self.fields['task'].queryset = Task.objects.filter(project__organization=organization)
+            self.fields['annotation'].queryset = Annotation.objects.filter(project__organization=organization)
+            self.fields['draft'].queryset = AnnotationDraft.objects.filter(task__project__organization=organization)
+
+    def _serialize_user(self, user):
+        if user is None:
+            return None
+
+        request = self.context.get('request')
+        requester = getattr(request, 'user', None) if request is not None else None
+        data = CompletedByDMSerializer(user, context=self.context).data
+        if AnnotatorReviewerFirewall.should_anonymize(user=user, requester=requester):
+            return AnnotatorReviewerFirewall.anonymize_user_data(data, user=user, requester=requester)
+        return data
+
+    def get_created_by(self, comment):
+        if self.context.get('expand_created_by'):
+            return self._serialize_user(comment.created_by)
+        return comment.created_by_id
+
+    def validate(self, attrs):
+        instance = getattr(self, 'instance', None)
+        task = attrs.get('task') or getattr(instance, 'task', None)
+        annotation = attrs.get('annotation') or getattr(instance, 'annotation', None)
+        draft = attrs.get('draft') or getattr(instance, 'draft', None)
+
+        if task is None and annotation is None and draft is None:
+            raise ValidationError('Comment must reference a task, annotation, or draft')
+
+        resolved_task = task
+        if annotation is not None:
+            if resolved_task is not None and annotation.task_id != resolved_task.id:
+                raise ValidationError({'annotation': 'Annotation must belong to the selected task'})
+            resolved_task = annotation.task
+
+        if draft is not None:
+            if resolved_task is not None and draft.task_id != resolved_task.id:
+                raise ValidationError({'draft': 'Draft must belong to the selected task'})
+            if annotation is not None and draft.annotation_id is not None and draft.annotation_id != annotation.id:
+                raise ValidationError({'draft': 'Draft must belong to the selected annotation'})
+            resolved_task = draft.task
+
+        attrs['task'] = resolved_task
+        attrs['project'] = resolved_task.project
+        return attrs
+
+    class Meta:
+        model = Comment
+        read_only_fields = ['project', 'created_by', 'updated_by', 'resolved_at', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'task': {'required': False, 'allow_null': True},
+            'annotation': {'required': False, 'allow_null': True},
+            'draft': {'required': False, 'allow_null': True},
+        }
+        fields = [
+            'id',
+            'text',
+            'region_ref',
+            'classifications',
+            'is_resolved',
+            'resolved_at',
+            'task',
+            'project',
+            'annotation',
+            'draft',
+            'created_by',
+            'updated_by',
+            'created_at',
+            'updated_at',
+        ]
 
 
 class TaskWithAnnotationsAndPredictionsAndDraftsSerializer(TaskSerializer):

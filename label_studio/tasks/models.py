@@ -1074,6 +1074,137 @@ class AnnotationDraft(FsmHistoryStateModel):
             super().delete(*args, **kwargs)
 
 
+class Comment(models.Model):
+    text = models.TextField(_('text'), default='', blank=True, help_text='Comment text')
+    region_ref = JSONField(_('region ref'), null=True, blank=True, default=None, help_text='Linked region metadata')
+    classifications = JSONField(
+        _('classifications'),
+        null=True,
+        blank=True,
+        default=None,
+        help_text='Optional structured classifications attached to the comment',
+    )
+    is_resolved = models.BooleanField(_('is resolved'), default=False, help_text='Whether the comment is resolved')
+    resolved_at = models.DateTimeField(
+        _('resolved at'),
+        null=True,
+        blank=True,
+        default=None,
+        help_text='When the comment was marked as resolved',
+    )
+    task = models.ForeignKey('tasks.Task', on_delete=models.CASCADE, related_name='comments')
+    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='comments')
+    annotation = models.ForeignKey(
+        'tasks.Annotation',
+        on_delete=models.CASCADE,
+        related_name='comments',
+        null=True,
+        blank=True,
+    )
+    draft = models.ForeignKey(
+        'tasks.AnnotationDraft',
+        on_delete=models.CASCADE,
+        related_name='comments',
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='comments',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text='User who created this comment',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='updated_comments',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text='Last user who updated this comment',
+    )
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True, help_text='Creation time')
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True, help_text='Last updated time')
+
+    class Meta:
+        db_table = 'comment'
+        indexes = [
+            models.Index(fields=['task', 'id']),
+            models.Index(fields=['annotation', 'id']),
+            models.Index(fields=['draft', 'id']),
+            models.Index(fields=['project', 'id']),
+            models.Index(fields=['task', 'is_resolved']),
+        ]
+
+    def has_permission(self, user, permission=None, request_method=None):
+        user.project = self.project  # link for activity log
+        return self.project.has_permission(user, permission=permission, request_method=request_method)
+
+    def _sync_targets(self):
+        if self.annotation_id:
+            self.task_id = self.annotation.task_id
+            self.project_id = self.annotation.project_id
+        elif self.draft_id:
+            self.task_id = self.draft.task_id
+            self.project_id = self.draft.task.project_id
+        elif self.task_id:
+            self.project_id = self.task.project_id
+        else:
+            raise ValidationError('Comment must be attached to a task, annotation, or draft')
+
+    def _touch_task(self):
+        request = get_current_request()
+        update_fields = ['updated_at']
+        if request:
+            self.task.updated_by = request.user
+            update_fields.append('updated_by')
+        self.task.save(update_fields=update_fields, skip_fsm=True)
+
+    def _update_task_comment_stats(self):
+        task = self.task
+        if task is None or not Task.objects.filter(pk=task.pk).exists():
+            return
+
+        comments = task.comments.all()
+        comment_authors = comments.exclude(created_by_id__isnull=True).values_list('created_by_id', flat=True).distinct()
+        last_comment_updated_at = comments.order_by('-updated_at').values_list('updated_at', flat=True).first()
+
+        Task.objects.filter(pk=task.pk).update(
+            comment_count=comments.count(),
+            unresolved_comment_count=comments.filter(is_resolved=False).count(),
+            last_comment_updated_at=last_comment_updated_at,
+        )
+        task.comment_authors.set(comment_authors)
+
+    def save(self, *args, **kwargs):
+        request = get_current_request()
+        if request:
+            self.updated_by = request.user
+            if not self.pk and self.created_by_id is None:
+                self.created_by = request.user
+
+        self._sync_targets()
+        if self.is_resolved:
+            self.resolved_at = self.resolved_at or now()
+        else:
+            self.resolved_at = None
+
+        result = super().save(*args, **kwargs)
+        self._touch_task()
+        self._update_task_comment_stats()
+        return result
+
+    def delete(self, *args, **kwargs):
+        task = self.task
+        result = super().delete(*args, **kwargs)
+        if task is not None and Task.objects.filter(pk=task.pk).exists():
+            self.task = task
+            self._touch_task()
+            self._update_task_comment_stats()
+        return result
+
+
 class Prediction(models.Model):
     """ML backend / Prompts predictions"""
 

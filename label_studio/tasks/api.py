@@ -25,7 +25,7 @@ from rest_framework import generics, viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
-from tasks.models import Annotation, AnnotationDraft, Prediction, Task
+from tasks.models import Annotation, AnnotationDraft, Comment, Prediction, Task
 from tasks.openapi_schema import (
     annotation_request_schema,
     annotation_response_example,
@@ -42,6 +42,7 @@ from tasks.ordering import (
 from tasks.serializers import (
     AnnotationDraftSerializer,
     AnnotationSerializer,
+    CommentSerializer,
     PredictionSerializer,
     TaskSerializer,
     TaskSimpleSerializer,
@@ -54,6 +55,97 @@ from webhooks.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@method_decorator(name='get', decorator=extend_schema(exclude=True))
+@method_decorator(name='post', decorator=extend_schema(exclude=True))
+class CommentsListAPI(generics.ListCreateAPIView):
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = CommentSerializer
+    permission_required = ViewClassPermission(
+        GET=all_permissions.annotations_view,
+        POST=all_permissions.annotations_change,
+    )
+
+    def _apply_ordering(self, queryset):
+        requested = self.request.query_params.get('ordering', '-id')
+        allowed = {'id', 'created_at', 'updated_at'}
+        ordering = []
+
+        for field in requested.split(','):
+            field = field.strip()
+            if not field:
+                continue
+            desc = field.startswith('-')
+            normalized = field[1:] if desc else field
+            if normalized in allowed:
+                ordering.append(f'-{normalized}' if desc else normalized)
+
+        return queryset.order_by(*(ordering or ['-id']))
+
+    def get_queryset(self):
+        queryset = Comment.objects.filter(project__organization=self.request.user.active_organization).select_related(
+            'annotation',
+            'created_by',
+            'draft',
+            'project',
+            'task',
+            'updated_by',
+        )
+
+        task_id = self.request.query_params.get('task')
+        annotation_id = self.request.query_params.get('annotation')
+        draft_id = self.request.query_params.get('draft')
+        project_id = self.request.query_params.get('project')
+
+        if task_id:
+            queryset = queryset.filter(task_id=task_id)
+        if annotation_id:
+            queryset = queryset.filter(annotation_id=annotation_id)
+        if draft_id:
+            queryset = queryset.filter(draft_id=draft_id)
+        if project_id:
+            queryset = queryset.filter(project_id=project_id)
+
+        return self._apply_ordering(queryset)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['expand_created_by'] = bool_from_request(self.request.GET, 'expand_created_by', False)
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+@method_decorator(name='get', decorator=extend_schema(exclude=True))
+@method_decorator(name='patch', decorator=extend_schema(exclude=True))
+@method_decorator(name='put', decorator=extend_schema(exclude=True))
+@method_decorator(name='delete', decorator=extend_schema(exclude=True))
+class CommentAPI(generics.RetrieveUpdateDestroyAPIView):
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = CommentSerializer
+    permission_required = ViewClassPermission(
+        GET=all_permissions.annotations_view,
+        PATCH=all_permissions.annotations_change,
+        PUT=all_permissions.annotations_change,
+        DELETE=all_permissions.annotations_change,
+    )
+
+    def get_queryset(self):
+        return Comment.objects.filter(project__organization=self.request.user.active_organization).select_related(
+            'annotation',
+            'created_by',
+            'draft',
+            'project',
+            'task',
+            'updated_by',
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['expand_created_by'] = bool_from_request(self.request.GET, 'expand_created_by', False)
+        return context
 
 
 # TODO: fix after switch to api/tasks from api/dm/tasks

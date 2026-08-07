@@ -5,7 +5,7 @@ from core.utils.common import load_func
 from django.conf import settings
 from django.utils import timezone
 from faker import Faker
-from tasks.models import Annotation, AnnotationDraft, FailedPrediction, Prediction, Task, TaskLock
+from tasks.models import Annotation, AnnotationDraft, Comment, FailedPrediction, Prediction, Task, TaskLock
 
 
 class TaskFactory(factory.django.DjangoModelFactory):
@@ -76,6 +76,17 @@ class PredictionFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = Prediction
+
+
+class CommentFactory(factory.django.DjangoModelFactory):
+    task = factory.SubFactory(TaskFactory)
+    project = factory.SelfAttribute('task.project')
+    annotation = factory.SubFactory(AnnotationFactory, task=factory.SelfAttribute('..task'), project=factory.SelfAttribute('..project'))
+    created_by = factory.SubFactory(load_func(settings.USER_FACTORY))
+    text = factory.Faker('sentence')
+
+    class Meta:
+        model = Comment
 
 
 class FailedPredictionFactory(factory.django.DjangoModelFactory):

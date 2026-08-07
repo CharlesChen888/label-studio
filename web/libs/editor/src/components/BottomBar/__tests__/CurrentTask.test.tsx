@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CurrentTask } from "../CurrentTask";
 import { FF_LEAP_1173 } from "../../../utils/feature-flags";
 const ff = mockFF();
@@ -42,7 +42,6 @@ describe("CurrentTask", () => {
     (window as any).APP_SETTINGS = undefined;
     // Initialize your store with default values
     store = {
-      annotationStore: { selected: { pk: null } },
       canGoNextTask: false,
       canGoPrevTask: false,
       hasInterface: mock(),
@@ -60,35 +59,63 @@ describe("CurrentTask", () => {
       commentStore: {
         loading: "list",
         comments: [],
+        currentComment: {},
+        commentFormSubmit: mock(() => Promise.resolve()),
         setAddedCommentThisSession: mock(),
+      },
+      settings: {
+        enableTooltips: true,
       },
       queuePosition: 1,
       prevTask: mock(),
       nextTask: mock(),
       postponeTask: mock(),
-      submitTaskComment: mock(),
+      acceptAnnotation: mock(),
+      rejectAnnotation: mock(),
+      isSubmitting: false,
+      isLoading: false,
+      annotationStore: {
+        selectedHistory: null,
+        selected: {
+          pk: null,
+          editable: true,
+          history: { canUndo: false },
+          versions: {},
+          draftSelected: false,
+          hasIncompleteRegions: false,
+          submissionInProgress: mock(),
+        },
+      },
       queueTotal: 22,
     };
   });
 
-  it("submits task-level comment from the new comment input", () => {
+  it("renders task review buttons and triggers review actions", async () => {
     store.hasInterface.mockImplementation((interfaceName: string) =>
-      ["skip", "postpone", "topbar:prevnext", "topbar:task-counter"].includes(interfaceName),
+      ["review", "topbar:prevnext", "topbar:task-counter"].includes(interfaceName),
     );
-    store.task = {
-      id: 6616,
-      allow_skip: true,
-      allow_postpone: true,
-      last_submitted_comment: "",
-      last_submitted_comment_at: null,
-    };
 
     render(<CurrentTask store={store} />);
 
-    fireEvent.change(screen.getByLabelText("Task comment"), { target: { value: "looks good" } });
-    fireEvent.click(screen.getByTestId("bottombar-task-comment-submit-button"));
+    fireEvent.click(screen.getByLabelText("accept-annotation"));
+    fireEvent.click(screen.getByLabelText("reject-annotation"));
 
-    expect(store.submitTaskComment).toHaveBeenCalledWith("looks good");
+    await waitFor(() => {
+      expect(store.acceptAnnotation).toHaveBeenCalled();
+      expect(store.rejectAnnotation).toHaveBeenCalled();
+    });
+  });
+
+  it("does not render task review buttons outside review mode", () => {
+    store.hasInterface.mockImplementation((interfaceName: string) =>
+      ["skip", "postpone", "topbar:prevnext", "topbar:task-counter"].includes(interfaceName),
+    );
+
+    render(<CurrentTask store={store} />);
+
+    expect(screen.queryByLabelText("Task comment")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("accept-annotation")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("reject-annotation")).not.toBeInTheDocument();
   });
 
   it("sets canPostpone correctly", () => {
