@@ -186,7 +186,41 @@ class User(UserMixin, AbstractBaseUser, PermissionsMixin, UserLastActivityMixin)
         annotations = self.active_organization_annotations()
         return annotations.values_list('project').distinct().count()
 
-    @cached_property
+    @property
+    def role_code(self):
+        """Get the frontend role code for the user in their active organization.
+        
+        Returns the role code used by the frontend:
+        - 'OW' for Owner
+        - 'AN' for Annotator  
+        - 'RV' for Reviewer
+        - None if no active organization or member not found
+        """
+        if not self.active_organization:
+            return None
+        
+        # Lazy import to avoid circular dependency
+        from organizations.models import OrganizationMember
+        
+        member = fast_first(
+            OrganizationMember.objects.filter(
+                user=self,
+                organization=self.active_organization,
+                deleted_at__isnull=True
+            )
+        )
+        
+        if not member:
+            return None
+        
+        role_mapping = {
+            'owner': 'OW',
+            'annotator': 'AN',
+            'reviewer': 'RV'
+        }
+        return role_mapping.get(member.role)
+
+    @property
     def own_organization(self) -> Optional[Organization]:
         return fast_first(Organization.objects.filter(created_by=self))
 

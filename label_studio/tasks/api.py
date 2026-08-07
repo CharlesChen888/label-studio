@@ -19,6 +19,7 @@ from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema
+from organizations.models import OrganizationMember, RoleChoice
 from projects.functions.stream_history import fill_history_annotation
 from projects.models import Project
 from rest_framework import generics, viewsets
@@ -114,7 +115,17 @@ class CommentsListAPI(generics.ListCreateAPIView):
         context['expand_created_by'] = bool_from_request(self.request.GET, 'expand_created_by', False)
         return context
 
+    def _check_comment_permission(self):
+        """Check if user has permission to modify comments. Annotators are restricted."""
+        om = OrganizationMember.objects.get(
+            user=self.request.user,
+            organization=self.request.user.active_organization,
+        )
+        if om.role == RoleChoice.ANNOTATOR:
+            raise PermissionDenied('Annotators cannot create or modify comments.')
+
     def perform_create(self, serializer):
+        self._check_comment_permission()
         serializer.save(created_by=self.request.user)
 
 
@@ -131,6 +142,24 @@ class CommentAPI(generics.RetrieveUpdateDestroyAPIView):
         PUT=all_permissions.annotations_change,
         DELETE=all_permissions.annotations_change,
     )
+
+    def _check_comment_permission(self):
+        """Check if user has permission to modify comments. Annotators are restricted."""
+        om = OrganizationMember.objects.get(
+            user=self.request.user,
+            organization=self.request.user.active_organization,
+        )
+        if om.role == RoleChoice.ANNOTATOR:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Annotators cannot modify comments.')
+
+    def update(self, request, *args, **kwargs):
+        self._check_comment_permission()
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        self._check_comment_permission()
+        return super().destroy(request, *args, **kwargs)
 
     def get_queryset(self):
         return Comment.objects.filter(project__organization=self.request.user.active_organization).select_related(

@@ -166,6 +166,7 @@
       {% if user.avatar %}
       avatar: "{{user.avatar_url|safe}}",
       {% endif %}
+      {% if user.role_code %}role: "{{user.role_code}}",{% endif %}
       {% block app_user_extra %}{% endblock %}
     },
     lookupHotkey: lookupHotkey,

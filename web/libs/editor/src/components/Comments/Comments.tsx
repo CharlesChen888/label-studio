@@ -7,6 +7,7 @@ import { CommentForm } from "./Comment/CommentForm";
 import { CommentsList } from "./Comment/CommentsList";
 import { useMounted } from "../../common/Utils/useMounted";
 import { FF_FIT_720_LAZY_LOAD_ANNOTATIONS, isFF } from "@humansignal/core/lib/utils/feature-flags";
+import { isAnnotatorRole } from "@humansignal/core/lib/utils/user-role";
 
 import "./Comments.prefix.css";
 
@@ -94,7 +95,7 @@ export const Comments: FC<{
 
   return (
     <div className={cn("comments").toClassName()}>
-      <CommentForm commentStore={commentStore} annotationStore={annotationStore} inline />
+      {!isAnnotatorRole() && <CommentForm commentStore={commentStore} annotationStore={annotationStore} inline />}
       {/* FIT-720: Show skeleton loader while fetching comments */}
       {isLoading ? <CommentsLoadingSkeleton /> : <CommentsList commentStore={commentStore} />}
     </div>

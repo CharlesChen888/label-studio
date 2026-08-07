@@ -9,6 +9,7 @@ import { Menu } from "../../../common/Menu/Menu";
 import { Space } from "../../../common/Space/Space";
 import { cn } from "../../../utils/bem";
 import { userDisplayName } from "@humansignal/core";
+import { isAnnotatorRole } from "@humansignal/core/lib/utils/user-role";
 import { humanDateDiff } from "../../../utils/utilities";
 import { CommentFormBase } from "../CommentFormBase";
 import { CommentsContext } from "./CommentsList";
@@ -262,7 +263,7 @@ export const CommentItem: FC<CommentItemProps> = observer(
               e.preventDefault();
             }}
           >
-            {isPersisted && (isCreator || canResolveAny) && (
+            {!isAnnotatorRole() && isPersisted && (isCreator || canResolveAny) && (
               <Dropdown.Trigger
                 content={
                   <Menu size="auto">
