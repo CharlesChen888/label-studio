@@ -9,6 +9,7 @@ from django.test.utils import CaptureQueriesContext
 from fsm.state_choices import TaskStateChoices
 from fsm.tests.factories import TaskStateFactory
 from projects.models import Project
+from tasks.choices import ActionType
 
 from ..utils import make_annotation, make_prediction, make_task, project_id  # noqa
 
@@ -124,6 +125,24 @@ def test_tasks_api_annotates_state_when_state_field_flags_enabled(business_clien
     assert rows_by_id[task_1.id]['state'] == TaskStateChoices.IN_PROGRESS
     assert rows_by_id[task_2.id]['state'] == TaskStateChoices.COMPLETED
     assert _task_state_point_lookup_queries(queries) == []
+
+
+@pytest.mark.django_db
+def test_tasks_api_returns_annotation_accepted_state(business_client, project_id):
+    project = Project.objects.get(pk=project_id)
+    accepted_task = make_task({'data': {'text': 'accepted'}}, project)
+    rejected_task = make_task({'data': {'text': 'rejected'}}, project)
+
+    make_annotation({'result': [], 'last_action': ActionType.REJECTED}, accepted_task.id)
+    make_annotation({'result': [], 'last_action': ActionType.ACCEPTED}, accepted_task.id)
+    make_annotation({'result': [], 'last_action': ActionType.REJECTED}, rejected_task.id)
+
+    response = business_client.get(f'/api/tasks?fields=all&project={project_id}')
+    assert response.status_code == 200, response.content
+
+    rows_by_id = {row['id']: row for row in response.json()['tasks']}
+    assert rows_by_id[accepted_task.id]['annotation_accepted'] == 'accepted'
+    assert rows_by_id[rejected_task.id]['annotation_accepted'] is None
 
 
 @pytest.mark.parametrize(

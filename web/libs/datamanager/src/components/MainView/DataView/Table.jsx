@@ -347,6 +347,7 @@ function DataViewInner({
   const decoration = useMemo(
     () => [
       commonDecoration("total_annotations", 60, "center"),
+      commonDecoration("annotation_accepted", 120, "center"),
       commonDecoration("cancelled_annotations", 60, "center"),
       commonDecoration("total_predictions", 60, "center"),
       commonDecoration("completed_at", 180, "space-between", true),

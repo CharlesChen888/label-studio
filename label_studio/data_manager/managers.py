@@ -1078,6 +1078,22 @@ def annotate_avg_lead_time(queryset):
     return queryset.annotate(avg_lead_time=Avg('annotations__lead_time'))
 
 
+def annotate_annotation_accepted(queryset):
+    from tasks.choices import ActionType
+    from tasks.models import Annotation
+
+    accepted_annotation_exists = Annotation.objects.filter(
+        task=OuterRef('pk'), last_action__in=[ActionType.ACCEPTED, ActionType.FIXED_AND_ACCEPTED]
+    )
+    return queryset.annotate(
+        annotation_accepted=Case(
+            When(Exists(accepted_annotation_exists), then=Value('accepted')),
+            default=Value(None),
+            output_field=TextField(),
+        )
+    )
+
+
 def annotate_draft_exists(queryset):
     from tasks.models import AnnotationDraft
 
@@ -1117,6 +1133,7 @@ def annotate_state(queryset):
 
 settings.DATA_MANAGER_ANNOTATIONS_MAP = {
     'avg_lead_time': annotate_avg_lead_time,
+    'annotation_accepted': annotate_annotation_accepted,
     'completed_at': annotate_completed_at,
     'annotations_results': annotate_annotations_results,
     'predictions_results': annotate_predictions_results,

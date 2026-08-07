@@ -124,6 +124,15 @@ def get_all_columns(project, *_):
             'project_defined': False,
         },
         {
+            'id': 'annotation_accepted',
+            'title': 'Annotation accepted',
+            'type': 'String',
+            'target': 'tasks',
+            'help': 'Shows "accepted" when at least one annotation for the task is accepted',
+            'visibility_defaults': {'explore': True, 'labeling': False},
+            'project_defined': False,
+        },
+        {
             'id': 'cancelled_annotations',
             'title': 'Cancelled',
             'type': 'Number',

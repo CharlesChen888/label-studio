@@ -679,6 +679,7 @@ class DataManagerTaskSerializer(TaskSerializer):
     inner_id = serializers.IntegerField(required=False)
     cancelled_annotations = serializers.IntegerField(required=False)
     total_annotations = serializers.IntegerField(required=False)
+    annotation_accepted = serializers.CharField(required=False, allow_null=True)
     total_predictions = serializers.IntegerField(required=False)
     completed_at = serializers.DateTimeField(required=False)
     annotations_results = serializers.SerializerMethodField(required=False)
