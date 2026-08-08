@@ -27,9 +27,7 @@ export const PeoplePage = () => {
   const [listRefreshKey, setListRefreshKey] = useState(0);
   const canInviteMembers = Boolean(user?.is_superuser);
 
-  // Check if current user can modify roles (superuser or owner)
-  // Owner check will be done on the backend; we show the UI for superusers by default
-  // and will attempt for others (backend will enforce permissions)
+  // Only superusers can modify roles
   const canModifyRoles = user?.is_superuser;
 
   useUpdatePageTitle("People");
@@ -131,6 +129,7 @@ export const PeoplePage = () => {
             onClose={() => selectMember(null)}
             onUpdateRole={handleRoleUpdate}
             canModifyRole={canModifyRoles}
+            currentUser={user}
           />
         ) : (
           isFF(FF_LSDV_E_297) && <HeidiTips collection="organizationPage" />

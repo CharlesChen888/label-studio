@@ -380,16 +380,24 @@ class OrganizationMemberRoleAPI(GetParentObjectMixin, generics.UpdateAPIView):
         user = get_object_or_404(User, pk=user_pk)
         member = get_object_or_404(OrganizationMember, user=user, organization=org)
 
-        # Check if user is owner or superuser
-        if not (request.user.is_superuser or request.user.om_through.filter(organization=org, role='owner').exists()):
-            raise PermissionDenied('Only owners or superusers can change member roles.')
+        # Only superusers can change roles
+        if not request.user.is_superuser:
+            raise PermissionDenied('Only superusers can change member roles.')
 
         # Get the new role from request
         new_role = request.data.get('role')
         if not new_role or new_role not in ['owner', 'annotator', 'reviewer']:
             return Response({'detail': 'Invalid role value. Must be one of: owner, annotator, reviewer.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Cannot change the last owner's role to non-owner
+        # Superuser must always be owner - cannot change superuser's role to non-owner
+        if user.is_superuser and new_role != 'owner':
+            raise PermissionDenied('Superusers must always have the Owner role. Cannot change their role.')
+
+        # Only superusers can assign the owner role - cannot set other users as owner
+        if new_role == 'owner' and not user.is_superuser:
+            raise PermissionDenied('Only superusers can be assigned the Owner role.')
+
+        # Cannot change the last owner's role to non-owner (even for superuser)
         if member.role == 'owner' and new_role != 'owner':
             owners_count = OrganizationMember.objects.filter(organization=org, role='owner').count()
             if owners_count <= 1:

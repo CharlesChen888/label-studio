@@ -35,7 +35,7 @@ const UserProjectsLinks = ({ projects }) => {
   );
 };
 
-export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole }) => {
+export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole, currentUser }) => {
   const user = member?.user;
   const [role, setRole] = useState(member?.role || "annotator");
   const [saving, setSaving] = useState(false);
@@ -44,6 +44,10 @@ export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole }) =
   useEffect(() => {
     setRole(member?.role || "annotator");
   }, [member?.user?.id]);
+
+  // Only show role selector if user can modify roles AND is not viewing their own profile
+  const isCurrentUser = currentUser?.id === user?.id;
+  const showRoleSelector = canModifyRole && !isCurrentUser;
 
   const fullName = [user?.first_name, user?.last_name]
     .filter((n) => !!n)
@@ -86,7 +90,7 @@ export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole }) =
           <div className={cn("user-info").elem("role-badge").toClassName()}>
             <Badge variant={ROLE_VARIANTS[role] || "sand"}>{ROLE_CHOICES.find(r => r.value === role)?.label || role}</Badge>
 
-            {canModifyRole && (
+            {showRoleSelector && (
               <Select
                 options={ROLE_CHOICES}
                 value={role}
