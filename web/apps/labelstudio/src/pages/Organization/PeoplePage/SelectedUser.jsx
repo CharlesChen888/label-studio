@@ -12,6 +12,12 @@ const ROLE_CHOICES = [
   { value: "reviewer", label: "Reviewer" },
 ];
 
+// 角色选项，用于修改别人的角色（不包含 owner）
+const EDITABLE_ROLE_CHOICES = [
+  { value: "annotator", label: "Annotator" },
+  { value: "reviewer", label: "Reviewer" },
+];
+
 const ROLE_VARIANTS = {
   owner: "grape",
   annotator: "sand",
@@ -92,7 +98,7 @@ export const SelectedUser = ({ member, onClose, onUpdateRole, canModifyRole, cur
 
             {showRoleSelector && (
               <Select
-                options={ROLE_CHOICES}
+                options={EDITABLE_ROLE_CHOICES}
                 value={role}
                 onChange={handleRoleChange}
                 disabled={saving}
