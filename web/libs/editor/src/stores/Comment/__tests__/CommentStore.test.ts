@@ -10,6 +10,7 @@ const DummyAnnotation = types
   .actions(() => ({
     setCommentCount: mock(),
     setUnresolvedCommentCount: mock(),
+    setAcceptedState: mock(),
   }));
 
 const DummyAnnotationStore = types.model({ selected: types.maybeNull(DummyAnnotation) });
@@ -30,6 +31,21 @@ const DummyRoot = types
   }));
 
 describe("CommentStore", () => {
+  it("defaults new annotation review status to unreviewed", () => {
+    const root = DummyRoot.create(
+      {
+        annotationStore: { selected: { id: "ann0", pk: 1, type: "annotation" } },
+        commentStore: { loading: null },
+        user: { id: 1 },
+      },
+      {
+        events: { invoke: mock() },
+      },
+    );
+
+    expect(root.commentStore.annotationReviewStatus).toBe("unreviewed");
+  });
+
   it("does not crash if the store is destroyed while listComments is pending", async () => {
     let resolveSdkPromise: Function;
     const sdkPromise = new Promise((res) => {

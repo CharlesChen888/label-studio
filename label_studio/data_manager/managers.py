@@ -1088,10 +1088,14 @@ def annotate_annotation_accepted(queryset):
         task=OuterRef('pk'), last_action__in=[ActionType.ACCEPTED, ActionType.FIXED_AND_ACCEPTED]
     )
     rejected_annotation_exists = Annotation.objects.filter(task=OuterRef('pk'), last_action=ActionType.REJECTED)
+    unreviewed_annotation_exists = Annotation.objects.filter(task=OuterRef('pk')).exclude(
+        last_action__in=[ActionType.ACCEPTED, ActionType.FIXED_AND_ACCEPTED, ActionType.REJECTED]
+    )
     return queryset.annotate(
         annotation_accepted=Case(
             When(Exists(accepted_annotation_exists), then=Value('accepted')),
             When(Exists(rejected_annotation_exists), then=Value('rejected')),
+            When(Exists(unreviewed_annotation_exists), then=Value('unreviewed')),
             default=Value(None),
             output_field=TextField(),
         )

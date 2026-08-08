@@ -139,9 +139,19 @@ class TestAnnotationStubSerializer(APITestCase):
         serializer = AnnotationStubSerializer(self.annotation)
         data = serializer.data
 
-        # When there's no last_action, accepted_state should be None
         assert 'accepted_state' in data
         assert data['accepted_state'] is None
+
+    def test_stub_serializer_accepted_state_submitted_is_unreviewed(self):
+        """Test that accepted_state returns unreviewed for submitted annotations."""
+        self.annotation.last_action = 'submitted'
+        self.annotation.save(update_fields=['last_action'])
+
+        serializer = AnnotationStubSerializer(self.annotation)
+        data = serializer.data
+
+        assert 'accepted_state' in data
+        assert data['accepted_state'] == 'unreviewed'
 
     def test_stub_serializer_accepted_state_with_last_action(self):
         """Test that accepted_state is correctly derived from last_action."""

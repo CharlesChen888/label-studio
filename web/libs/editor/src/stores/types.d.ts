@@ -173,13 +173,13 @@ type MSTCommentStore = {
   commentFormSubmit: () => Promise<void>;
   setTooltipMessage: (message: string) => void;
   currentComment: any;
-  annotationReviewStatus: "accepted" | "rejected";
+  annotationReviewStatus: "unreviewed" | "accepted" | "rejected";
   addedCommentThisSession: boolean;
   isHighlighting: boolean;
   isRelevantList: boolean;
   listComments: (options: { mounted?: { current: boolean }; suppressClearComments: boolean }) => Promise<void>;
   loadAnnotationReviewStatus: () => Promise<void>;
-  updateAnnotationReviewStatus: (status: "accepted" | "rejected") => Promise<void>;
+  updateAnnotationReviewStatus: (status: "unreviewed" | "accepted" | "rejected") => Promise<void>;
   restoreCommentsFromCache: (cacheKey: string) => void;
 };
 

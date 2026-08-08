@@ -132,10 +132,12 @@ def test_tasks_api_returns_annotation_accepted_state(business_client, project_id
     project = Project.objects.get(pk=project_id)
     accepted_task = make_task({'data': {'text': 'accepted'}}, project)
     rejected_task = make_task({'data': {'text': 'rejected'}}, project)
+    unreviewed_task = make_task({'data': {'text': 'unreviewed'}}, project)
 
     make_annotation({'result': [], 'last_action': ActionType.REJECTED}, accepted_task.id)
     make_annotation({'result': [], 'last_action': ActionType.ACCEPTED}, accepted_task.id)
     make_annotation({'result': [], 'last_action': ActionType.REJECTED}, rejected_task.id)
+    make_annotation({'result': [], 'last_action': ActionType.SUBMITTED}, unreviewed_task.id)
 
     response = business_client.get(f'/api/tasks?fields=all&project={project_id}')
     assert response.status_code == 200, response.content
@@ -143,6 +145,7 @@ def test_tasks_api_returns_annotation_accepted_state(business_client, project_id
     rows_by_id = {row['id']: row for row in response.json()['tasks']}
     assert rows_by_id[accepted_task.id]['annotation_accepted'] == 'accepted'
     assert rows_by_id[rejected_task.id]['annotation_accepted'] == 'rejected'
+    assert rows_by_id[unreviewed_task.id]['annotation_accepted'] == 'unreviewed'
 
 
 @pytest.mark.parametrize(

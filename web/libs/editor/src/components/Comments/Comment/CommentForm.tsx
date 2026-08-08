@@ -101,12 +101,12 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
   );
 
   const isReviewStatusReadOnly = isAnnotatorRole();
-  const annotationReviewStatus = commentStore.annotationReviewStatus ?? "accepted";
+  const annotationReviewStatus = commentStore.annotationReviewStatus ?? "unreviewed";
 
   const onAnnotationReviewStatusChange = useCallback(
     async (e: ChangeEvent<HTMLSelectElement>) => {
       if (isReviewStatusReadOnly) return;
-      const status = e.target.value === "rejected" ? "rejected" : "accepted";
+      const status = ["unreviewed", "accepted", "rejected"].includes(e.target.value) ? e.target.value : "unreviewed";
       if (status === annotationReviewStatus) return;
 
       try {
@@ -144,6 +144,7 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
           onChange={onAnnotationReviewStatusChange}
           disabled
         >
+          <option value="unreviewed">Unreviewed</option>
           <option value="accepted">Accepted</option>
           <option value="rejected">Rejected</option>
         </select>
@@ -201,6 +202,7 @@ export const CommentForm: FC<CommentFormProps> = observer(({ commentStore, annot
           onChange={onAnnotationReviewStatusChange}
           disabled={isReviewStatusReadOnly}
         >
+          <option value="unreviewed">Unreviewed</option>
           <option value="accepted">Accepted</option>
           <option value="rejected">Rejected</option>
         </select>

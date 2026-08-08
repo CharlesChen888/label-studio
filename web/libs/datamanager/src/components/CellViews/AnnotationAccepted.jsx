@@ -9,7 +9,7 @@ export const AnnotationAccepted = ({ value }) => {
     return <Badge variant="negative">X</Badge>;
   }
 
-  return null;
+  return "-";
 };
 
 AnnotationAccepted.userSelectable = false;

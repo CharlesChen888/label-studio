@@ -24,7 +24,11 @@ export class CommentsSdk {
   }
 
   normalizeAnnotationReviewStatus = (annotation) => {
-    return annotation?.accepted_state === "rejected" ? "rejected" : "accepted";
+    if (annotation?.accepted_state === "accepted" || annotation?.accepted_state === "rejected") {
+      return annotation.accepted_state;
+    }
+
+    return "unreviewed";
   };
 
   createComment = async (comment) => {
@@ -106,7 +110,7 @@ export class CommentsSdk {
   };
 
   getAnnotationReviewStatus = async ({ annotation }) => {
-    if (!annotation) return "accepted";
+    if (!annotation) return "unreviewed";
 
     const annotationData = await this.dm.apiCall("fetchAnnotation", { annotationID: annotation });
 
@@ -114,7 +118,7 @@ export class CommentsSdk {
   };
 
   updateAnnotationReviewStatus = async ({ annotation, acceptedState }) => {
-    if (!annotation) return "accepted";
+    if (!annotation) return "unreviewed";
 
     const annotationData = await this.dm.apiCall(
       "updateAnnotation",

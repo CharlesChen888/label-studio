@@ -10,7 +10,7 @@ export const CommentStore = types
     loading: types.optional(types.maybeNull(types.string), "list"),
     comments: types.optional(types.array(Comment), []),
     highlightedComment: types.safeReference(Comment),
-    annotationReviewStatus: types.optional(types.enumeration(["accepted", "rejected"]), "accepted"),
+    annotationReviewStatus: types.optional(types.enumeration(["unreviewed", "accepted", "rejected"]), "unreviewed"),
   })
   .volatile(() => ({
     addedCommentThisSession: false,
@@ -162,9 +162,9 @@ export const CommentStore = types
       self.loading = loading;
     }
 
-    function setAnnotationReviewStatus(status = "accepted") {
-      self.annotationReviewStatus = status === "rejected" ? "rejected" : "accepted";
-      self.annotation?.setAcceptedState?.(self.annotationReviewStatus);
+    function setAnnotationReviewStatus(status = "unreviewed") {
+      self.annotationReviewStatus = ["unreviewed", "accepted", "rejected"].includes(status) ? status : "unreviewed";
+      self.annotation?.setAcceptedState?.(self.annotationReviewStatus === "unreviewed" ? null : self.annotationReviewStatus);
     }
 
     function setTooltipMessage(tooltipMessage) {
@@ -439,7 +439,7 @@ export const CommentStore = types
 
     const loadAnnotationReviewStatus = flow(function* () {
       if (!self.annotationId) {
-        setAnnotationReviewStatus("accepted");
+        setAnnotationReviewStatus("unreviewed");
         return;
       }
 
@@ -455,7 +455,7 @@ export const CommentStore = types
     const updateAnnotationReviewStatus = flow(function* (status) {
       if (!self.annotationId) return;
 
-      const normalizedStatus = status === "rejected" ? "rejected" : "accepted";
+      const normalizedStatus = ["unreviewed", "accepted", "rejected"].includes(status) ? status : "unreviewed";
       const previousStatus = self.annotationReviewStatus;
 
       setAnnotationReviewStatus(normalizedStatus);

@@ -172,21 +172,27 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
     )
     unique_id = serializers.CharField(required=False, write_only=True)
     accepted_state = serializers.ChoiceField(
-        choices=[('accepted', 'accepted'), ('rejected', 'rejected')],
+        choices=[('unreviewed', 'unreviewed'), ('accepted', 'accepted'), ('rejected', 'rejected')],
         required=False,
     )
 
     @staticmethod
     def _last_action_from_accepted_state(accepted_state):
+        if accepted_state == 'unreviewed':
+            return ActionType.SUBMITTED
         if accepted_state == 'rejected':
             return ActionType.REJECTED
         return ActionType.ACCEPTED
 
     @staticmethod
     def _accepted_state_from_annotation(annotation):
+        if annotation.last_action in {ActionType.ACCEPTED, ActionType.FIXED_AND_ACCEPTED}:
+            return 'accepted'
         if annotation.last_action == ActionType.REJECTED:
             return 'rejected'
-        return 'accepted'
+        if annotation.last_action:
+            return 'unreviewed'
+        return None
 
     def create(self, validated_data):
         accepted_state = validated_data.pop('accepted_state', None)
@@ -222,8 +228,8 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         return dedupe_annotation_result_list(data)
 
     def validate_accepted_state(self, value):
-        if value not in {'accepted', 'rejected'}:
-            raise ValidationError('accepted_state must be "accepted" or "rejected"')
+        if value not in {'unreviewed', 'accepted', 'rejected'}:
+            raise ValidationError('accepted_state must be "unreviewed", "accepted" or "rejected"')
         return value
 
     def _resolve_project_for_validation(self, data):

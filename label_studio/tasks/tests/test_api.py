@@ -239,6 +239,16 @@ class TestCommentAPI(APITestCase):
         annotation.refresh_from_db()
         assert annotation.last_action == 'rejected'
 
+    def test_submitted_annotation_returns_unreviewed_accepted_state(self):
+        task = TaskFactory(project=self.project, data={'text': 'test'})
+        annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user, last_action='submitted')
+
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(f'/api/annotations/{annotation.id}/')
+
+        assert response.status_code == 200
+        assert response.json()['accepted_state'] == 'unreviewed'
+
     def test_annotator_cannot_update_annotation_accepted_state(self):
         task = TaskFactory(project=self.project, data={'text': 'test'})
         annotation = AnnotationFactory(task=task, project=self.project, completed_by=self.user, last_action='submitted')

@@ -274,7 +274,16 @@ const _Annotation = types
       updatedDate: getUpdatedAt(sn),
       ground_truth: sn.honeypot ?? sn.ground_truth ?? false,
       skipped: sn.skipped || sn.was_cancelled,
-      acceptedState: sn.accepted_state ?? sn.acceptedState ?? null,
+      acceptedState:
+        sn.accepted_state === "fixed_and_accepted"
+          ? "fixed"
+          : sn.accepted_state === "accepted" || sn.accepted_state === "rejected" || sn.accepted_state === "fixed"
+            ? sn.accepted_state
+            : sn.acceptedState === "fixed_and_accepted"
+              ? "fixed"
+              : sn.acceptedState === "accepted" || sn.acceptedState === "rejected" || sn.acceptedState === "fixed"
+                ? sn.acceptedState
+                : null,
     };
   })
   .views((self) =>
