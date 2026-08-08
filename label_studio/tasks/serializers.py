@@ -289,6 +289,9 @@ class AnnotationSerializer(FlexFieldsModelSerializer):
         accepted_state = validated_data.pop('accepted_state', None)
         if accepted_state is not None:
             validated_data['last_action'] = self._last_action_from_accepted_state(accepted_state)
+        else:
+            # If accepted_state is not provided, reset review status to unreviewed
+            validated_data['last_action'] = ActionType.SUBMITTED
         return super().update(instance, validated_data)
 
     class Meta:
