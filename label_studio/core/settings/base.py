@@ -380,7 +380,7 @@ TEMPLATES = [
 ]
 
 # OSS version does not support Redis
-REDIS_ENABLED = False
+REDIS_ENABLED = True
 
 # RQ
 RQ_QUEUES = {

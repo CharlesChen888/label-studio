@@ -24,14 +24,36 @@ all_permissions = AllPermissions()
 logger = logging.getLogger(__name__)
 
 
+def retrieve_tasks_predictions_job(project_id, task_ids):
+    """Background job for retrieving predictions."""
+    project = Project.objects.get(id=project_id)
+    queryset = Task.objects.filter(id__in=task_ids, project=project)
+    evaluate_predictions(queryset)
+
+
 def retrieve_tasks_predictions(project, queryset, **kwargs):
-    """Retrieve predictions by tasks ids
+    """Retrieve predictions by tasks ids asynchronously
 
     :param project: project instance
     :param queryset: filtered tasks db queryset
     """
-    evaluate_predictions(queryset)
-    return {'processed_items': queryset.count(), 'detail': 'Retrieved ' + str(queryset.count()) + ' predictions'}
+    task_ids = list(queryset.values_list('id', flat=True))
+    count = len(task_ids)
+
+    job = start_job_async_or_sync(
+        retrieve_tasks_predictions_job,
+        project.id,
+        task_ids,
+        queue_name='low',
+        job_timeout=60 * 60,
+    )
+    if isinstance(job, Job):
+        return {
+            'async': True,
+            'processed_items': count,
+            'detail': 'Retrieving predictions for ' + str(count) + ' tasks in the background',
+        }
+    return job
 
 
 def delete_tasks(project, queryset, **kwargs):
