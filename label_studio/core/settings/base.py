@@ -385,26 +385,26 @@ REDIS_ENABLED = True
 # RQ
 RQ_QUEUES = {
     'critical': {
-        'HOST': 'localhost',
-        'PORT': 6379,
+        'HOST': os.getenv('REDIS_HOST', 'localhost'),
+        'PORT': os.getenv('REDIS_PORT', 6379),
         'DB': 0,
         'DEFAULT_TIMEOUT': 180,
     },
     'high': {
-        'HOST': 'localhost',
-        'PORT': 6379,
+        'HOST': os.getenv('REDIS_HOST', 'localhost'),
+        'PORT': os.getenv('REDIS_PORT', 6379),
         'DB': 0,
         'DEFAULT_TIMEOUT': 180,
     },
     'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
+        'HOST': os.getenv('REDIS_HOST', 'localhost'),
+        'PORT': os.getenv('REDIS_PORT', 6379),
         'DB': 0,
         'DEFAULT_TIMEOUT': 180,
     },
     'low': {
-        'HOST': 'localhost',
-        'PORT': 6379,
+        'HOST': os.getenv('REDIS_HOST', 'localhost'),
+        'PORT': os.getenv('REDIS_PORT', 6379),
         'DB': 0,
         'DEFAULT_TIMEOUT': 180,
     },
