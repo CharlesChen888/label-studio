@@ -16,6 +16,7 @@ import { RichTextRegionModel } from "./RichTextRegion";
 import { TimelineRegionModel } from "./TimelineRegion";
 import { VideoRectangleRegionModel } from "./VideoRectangleRegion";
 import { VideoVectorRegionModel } from "./VideoVectorRegion";
+import { VideoKeyPointRegionModel } from "./VideoKeyPointRegion";
 import { ClassificationArea } from "./Area";
 
 const AllRegionsType = types.union(
@@ -35,6 +36,7 @@ const AllRegionsType = types.union(
   ParagraphsRegionModel,
   VideoRectangleRegionModel,
   VideoVectorRegionModel,
+  VideoKeyPointRegionModel,
   ClassificationArea,
   ...Registry.customTags.map((t) => t.region).filter(Boolean),
 );
@@ -65,4 +67,5 @@ export {
   TimelineRegionModel,
   VideoRectangleRegionModel,
   VideoVectorRegionModel,
+  VideoKeyPointRegionModel,
 };

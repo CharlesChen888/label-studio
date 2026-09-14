@@ -129,11 +129,15 @@ const Model = types
     get videoControl() {
       return self.annotation.toNames
         .get(self.name)
-        ?.find((s) => s.type.includes("video") && !s.type.includes("videovector"));
+        ?.find((s) => s.type.includes("video") && !s.type.includes("videovector") && !s.type.includes("videokeypoint"));
     },
 
     get videoVectorControl() {
       return self.annotation.toNames.get(self.name)?.find((s) => s.type.includes("videovector"));
+    },
+
+    get videoKeyPointControl() {
+      return self.annotation.toNames.get(self.name)?.find((s) => s.type.includes("videokeypoint"));
     },
 
     states() {
@@ -452,6 +456,32 @@ const Model = types
 
         const activeStates = self.activeStates();
         const area = self.annotation.createResult({ sequence }, {}, control, self, true, activeStates);
+        return area;
+      },
+
+      addVideoKeyPointRegion(data) {
+        const control = self.videoKeyPointControl;
+
+        if (!control) {
+          console.error("No video keypoint control is found");
+          return;
+        }
+
+        const pointRadii = { small: 4, medium: 7, large: 10 };
+        const pointRadius = pointRadii[control.pointsize] ?? pointRadii.small;
+        const workingWidth = self.workingArea?.realWidth;
+        const width = data.width ?? (workingWidth ? (pointRadius / workingWidth) * 100 : undefined);
+        const sequence = [
+          {
+            frame: self.frame,
+            enabled: true,
+            width,
+            ...data,
+          },
+        ];
+
+        const activeStates = self.activeStates();
+        const area = self.annotation.createResult({ sequence }, {}, control, self, false, activeStates);
         return area;
       },
 

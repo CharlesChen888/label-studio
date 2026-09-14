@@ -738,6 +738,15 @@ describe("HtxVideoView", () => {
     expect(screen.queryByTestId("video-regions") ?? screen.queryByTestId("stage")).toBeInTheDocument();
   });
 
+  it("supportsRegions is true when item.videoKeyPointControl is defined", async () => {
+    const item = createMockItem({ videoControl: undefined, videoKeyPointControl: {} });
+    const store = createMockStore();
+    render(<HtxVideoView item={item} store={store} />);
+    await flushRaf();
+    await triggerVideoLoad();
+    expect(screen.queryByTestId("video-regions") ?? screen.queryByTestId("stage")).toBeInTheDocument();
+  });
+
   it("supportsTimelineRegions is true when item.timelineControl is defined", async () => {
     const item = createMockItem({ timelineControl: {} });
     const store = createMockStore();

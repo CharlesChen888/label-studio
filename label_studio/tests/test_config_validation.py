@@ -319,6 +319,66 @@ def test_separated_video_vector_config_with_existing_result_validates(business_c
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize('saved_result_model', ['annotation', 'draft'])
+def test_separated_video_keypoint_config_with_existing_result_validates(business_client, project_id, saved_result_model):
+    """Unchanged separated Labels + VideoKeyPoint configs must validate after saved results exist."""
+    label_config = """
+    <View>
+      <Labels name="labels" toName="video">
+        <Label value="Head"/>
+        <Label value="Hand" background="gold"/>
+      </Labels>
+      <Video name="video" value="$video" framerate="25.0"/>
+      <VideoKeyPoint name="kp" toName="video"/>
+    </View>
+    """
+
+    response = business_client.patch(
+        f'/api/projects/{project_id}',
+        data=json.dumps({'label_config': label_config}),
+        content_type='application/json',
+    )
+    assert response.status_code == 200
+
+    project = Project.objects.get(pk=project_id)
+    task = make_task({'data': {'video': '/static/samples/opossum_snow.mp4'}}, project)
+    result = [
+        {
+            'id': 'video-kp-head',
+            'from_name': 'kp',
+            'to_name': 'video',
+            'type': 'videokeypoint',
+            'origin': 'manual',
+            'value': {
+                'labels': ['Head'],
+                'sequence': [
+                    {
+                        'frame': 0,
+                        'enabled': True,
+                        'x': 50.0,
+                        'y': 50.0,
+                    }
+                ],
+            },
+        }
+    ]
+    if saved_result_model == 'annotation':
+        make_annotation({'result': result}, task.id)
+    else:
+        from tasks.models import AnnotationDraft
+
+        AnnotationDraft.objects.create(task=task, user=project.created_by, result=result)
+
+    response = business_client.post(
+        f'/api/projects/{project_id}/validate',
+        data=json.dumps({'label_config': label_config}),
+        content_type='application/json',
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 def test_video_vector_labels_do_not_mask_removed_labels_from_unrelated_controls(business_client, project_id):
     """VideoVector compatibility labels must be scoped to the current video control.
 

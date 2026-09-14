@@ -38,6 +38,8 @@ const resultTypes = [
   "videorectangle",
   "videovector",
   "videovectorlabels",
+  "videokeypoint",
+  "videokeypointlabels",
   "ranker",
 ];
 
@@ -66,6 +68,7 @@ const resultValues = {
   timelinelabels: types.maybe(types.array(types.string)), // new one
   bitmasklabels: types.maybe(types.array(types.string)),
   videovectorlabels: types.maybe(types.array(types.string)),
+  videokeypointlabels: types.maybe(types.array(types.string)),
   taxonomy: types.frozen(), // array of arrays of strings
   sequence: types.frozen(),
 };

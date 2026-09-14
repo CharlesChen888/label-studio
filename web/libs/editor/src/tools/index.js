@@ -17,6 +17,7 @@ import { Contrast } from "./Contrast";
 import { MagicWand } from "./MagicWand";
 import { Selection } from "./Selection";
 import { VideoVector } from "./VideoVector";
+import { VideoKeyPoint } from "./VideoKeyPoint";
 
 export {
   Brush,
@@ -27,6 +28,7 @@ export {
   Polygon,
   Vector,
   VideoVector,
+  VideoKeyPoint,
   Rect,
   Rect3Point,
   Ellipse,

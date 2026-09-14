@@ -9,6 +9,7 @@ import { Annotation } from "../../../stores/Annotation/Annotation";
 import { fixMobxObserve } from "../../../utils/utilities";
 import { Rectangle } from "./Rectangle";
 import { VideoVectorShape } from "./VideoVector";
+import { VideoKeyPointShape } from "./VideoKeyPoint";
 import { createBoundingBoxGetter, createOnDragMoveHandler } from "./TransformTools";
 import ToolsManager from "../../../tools/Manager";
 
@@ -163,6 +164,20 @@ const VideoRegionsPure = ({
     return null;
   }, [item.name]);
 
+  const getKeyPointTool = useCallback(() => {
+    try {
+      const manager = ToolsManager.getInstance({ name: item.name });
+      const selected = manager?.findSelectedTool();
+      const drawing = manager?.findDrawingTool();
+
+      if (drawing?.toolName === "VideoKeyPointTool") return drawing;
+      if (selected?.toolName === "VideoKeyPointTool") return selected;
+    } catch {
+      // No tool manager available
+    }
+    return null;
+  }, [item.name]);
+
   const handleMouseDown = (e) => {
     if (item.annotation?.isReadOnly()) return;
 
@@ -181,6 +196,25 @@ const VideoRegionsPure = ({
     const isInBounds = inBounds(x, y);
 
     if (!isInBounds) return;
+
+    const keyPointTool = getKeyPointTool();
+
+    if (keyPointTool) {
+      item.annotation.unselectAreas();
+      keyPointTool.event("click", e.evt, [x, y]);
+      return;
+    }
+
+    if (item.videoKeyPointControl) {
+      const { width: waWidth, height: waHeight } = videoDimensions;
+
+      item.annotation.unselectAreas();
+      item.addVideoKeyPointRegion({
+        x: (x / waWidth) * 100,
+        y: (y / waHeight) * 100,
+      });
+      return;
+    }
 
     if (vectorTool) {
       vectorTool.event("mousedown", e.evt, [x, y]);
@@ -243,6 +277,7 @@ const VideoRegionsPure = ({
         const { x, y } = limitCoordinates(normalizeMouseOffsets(e.evt.offsetX, e.evt.offsetY));
 
         vectorTool.event("click", e.evt, [x, y]);
+        return;
       }
     },
     [getVectorTool, limitCoordinates, normalizeMouseOffsets],
@@ -254,7 +289,10 @@ const VideoRegionsPure = ({
     const stage = tr.getStage();
     // @todo not an obvious way to not render transformer for hidden regions
     // @todo could it be rewritten to usual react way?
-    const shapes = selected.map((shape) => stage.findOne(`#${shape.id}`)).filter(Boolean);
+    const shapes = selected
+      .filter((shape) => shape.type !== "videokeypointregion")
+      .map((shape) => stage.findOne(`#${shape.id}`))
+      .filter(Boolean);
 
     tr.nodes(shapes);
     tr.getLayer().batchDraw();
@@ -297,7 +335,8 @@ const VideoRegionsPure = ({
           <SelectionRect {...newRegion} />
         </Layer>
       ) : null}
-      {!item.annotation?.isReadOnly() && selected?.length > 0 ? (
+      {!item.annotation?.isReadOnly() &&
+      selected?.some((shape) => shape.type !== "videokeypointregion") ? (
         <Layer>
           <Transformer
             ref={initTransform}
@@ -372,6 +411,20 @@ const Shape = observer(({ id, reg, item, stageRef, currentFrame, allowRegionsOut
   if (reg.type === "videovectorregion") {
     return (
       <VideoVectorShape
+        id={id}
+        reg={reg}
+        box={box}
+        frame={frame}
+        onClick={handleClick}
+        allowOutsideBounds={allowRegionsOutsideWorkingArea}
+        {...props}
+      />
+    );
+  }
+
+  if (reg.type === "videokeypointregion") {
+    return (
+      <VideoKeyPointShape
         id={id}
         reg={reg}
         box={box}

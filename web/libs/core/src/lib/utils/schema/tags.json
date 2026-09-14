@@ -2901,6 +2901,130 @@
       }
     }
   },
+  "VideoKeyPoint": {
+    "name": "VideoKeyPoint",
+    "description": "VideoKeyPoint tag brings KeyPoint Tracking capabilities to videos. It works in combination with the `<Video/>` and the `<Labels/>` tags.\n\nUse with the following data types: video",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of the element",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of the element to control (video)",
+        "type": "string",
+        "required": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of keypoint",
+        "type": "number",
+        "required": false,
+        "default": 0.9
+      },
+      "fillColor": {
+        "name": "fillColor",
+        "description": "Keypoint fill color in hexadecimal",
+        "type": "string",
+        "required": false,
+        "default": "#8bad00"
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Keypoint stroke color in hexadecimal",
+        "type": "string",
+        "required": false,
+        "default": "#8bad00"
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of stroke",
+        "type": "number",
+        "required": false,
+        "default": 2
+      },
+      "pointSize": {
+        "name": "pointSize",
+        "description": "Size of keypoint",
+        "type": ["small", "medium", "large"],
+        "required": false,
+        "default": "small"
+      }
+    }
+  },
+  "VideoKeyPointLabels": {
+    "name": "VideoKeyPointLabels",
+    "description": "The `VideoKeyPointLabels` tag creates labeled keypoints on video frames.\nCombines VideoKeyPoint and Labels into one tag for convenient keypoint annotation.\n\nUse with the following data types: video.",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of tag",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of video to label",
+        "type": "string",
+        "required": true
+      },
+      "choice": {
+        "name": "choice",
+        "description": "Configure whether you can select one or multiple labels",
+        "type": ["single", "multiple"],
+        "required": false,
+        "default": "single"
+      },
+      "maxUsages": {
+        "name": "maxUsages",
+        "description": "Maximum number of times a label can be used per task",
+        "type": "number",
+        "required": false
+      },
+      "showInline": {
+        "name": "showInline",
+        "description": "Show labels in the same visual line",
+        "type": ["true", "false"],
+        "required": false,
+        "default": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of keypoint",
+        "type": "number",
+        "required": false,
+        "default": 0.9
+      },
+      "fillColor": {
+        "name": "fillColor",
+        "description": "Keypoint fill color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Keypoint stroke color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of stroke",
+        "type": "number",
+        "required": false,
+        "default": 2
+      },
+      "pointSize": {
+        "name": "pointSize",
+        "description": "Size of keypoint",
+        "type": ["small", "medium", "large"],
+        "required": false,
+        "default": "small"
+      }
+    }
+  },
   "VideoVector": {
     "name": "VideoVector",
     "description": "VideoVector tag brings vector annotation capabilities to videos.\nIt works in combination with the `<Video/>` and the `<Labels/>` tags.\nSupports closable paths and skeleton mode with\nkeyframe-based interpolation across video frames.\n\nUse with the following data types: video",
@@ -3367,6 +3491,8 @@
       "VideoRectangle",
       "VideoVector",
       "VideoVectorLabels",
+      "VideoKeyPoint",
+      "VideoKeyPointLabels",
       "Collapse",
       "Filter",
       "Header",

@@ -16,6 +16,8 @@ import { TimelineLabelsModel } from "./TimelineLabels";
 import { VideoRectangleModel } from "./VideoRectangle";
 import { VideoVectorModel } from "./VideoVector";
 import { VideoVectorLabelsModel } from "./VideoVectorLabels";
+import { VideoKeyPointModel } from "./VideoKeyPoint";
+import { VideoKeyPointLabelsModel } from "./VideoKeyPointLabels";
 
 import { BrushLabelsModel } from "./BrushLabels";
 import { BitmaskLabelsModel } from "./BitmaskLabels";
@@ -69,6 +71,8 @@ export {
   RectangleModel,
   VideoVectorModel,
   VideoVectorLabelsModel,
+  VideoKeyPointModel,
+  VideoKeyPointLabelsModel,
   RelationsModel,
   RelationModel,
 };

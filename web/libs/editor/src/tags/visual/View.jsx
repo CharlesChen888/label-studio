@@ -129,6 +129,8 @@ const Model = types
       "videorectangle",
       "videovector",
       "videovectorlabels",
+      "videokeypoint",
+      "videokeypointlabels",
       "timelinelabels",
       "custominterface",
       ...Registry.customTags.map((t) => t.tag.toLowerCase()),

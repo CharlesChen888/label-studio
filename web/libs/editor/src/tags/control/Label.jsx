@@ -87,6 +87,7 @@ const Model = types
         "BitmaskLabels",
         "VectorLabels",
         "VideoVectorLabels",
+        "VideoKeyPointLabels",
         ...Registry.customTags.map((t) => t.tag).filter((tag) => tag.endsWith("Labels")),
       ]),
     ),

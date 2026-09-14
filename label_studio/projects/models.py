@@ -742,14 +742,14 @@ class Project(ProjectMixin, FsmHistoryStateModel):
         tag_types = {tag_info['type'] for _, tag_info in parsed_config.items()}
 
         def add_separated_video_object_labels(control_tag_from_config, labels_from_config_by_tag):
-            # DEV-1990 Workaround for Video labels as there are no labels in separated VideoRectangle/VideoVector tags.
-            # Their annotation results store selected labels under the VideoRectangle/VideoVector control name, while
+            # DEV-1990 Workaround for Video labels as there are no labels in separated VideoRectangle/VideoVector/VideoKeyPoint tags.
+            # Their annotation results store selected labels under the VideoRectangle/VideoVector/VideoKeyPoint control name, while
             # the label values are declared by a sibling Labels tag targeting the same Video object.
             control_tag_info = parsed_config.get(control_tag_from_config)
             if (
                 labels_from_config_by_tag
                 or not control_tag_info
-                or control_tag_info.get('type') not in {'VideoRectangle', 'VideoVector'}
+                or control_tag_info.get('type') not in {'VideoRectangle', 'VideoVector', 'VideoKeyPoint', 'VideoKeypoint'}
             ):
                 return labels_from_config_by_tag
 
@@ -1618,8 +1618,8 @@ class ProjectSummary(models.Model):
         if not isinstance(result, dict):
             return []
         result_type = result.get('type')
-        # DEV-1990 Workaround for Video labels as there are no labels in VideoRectangle/VideoVector tags
-        if result_type in ['videorectangle', 'videovector']:
+        # DEV-1990 Workaround for Video labels as there are no labels in VideoRectangle/VideoVector/VideoKeyPoint tags
+        if result_type in ['videorectangle', 'videovector', 'videokeypoint']:
             result_type = 'labels'
         value = result.get('value')
         if isinstance(value, list):
