@@ -92,6 +92,42 @@ const SelectedModelMixin = types
       return f;
     },
 
+    selectNextLabel(currentLabel) {
+      const children = self.tiedChildren;
+      const visibleChildren = children.filter((c) => c.visible);
+
+      if (visibleChildren.length === 0) return null;
+
+      // 优先以传入的基准标签定位（创建区域后选中状态可能已被清空，
+      // 所以需要外部在清空前先记录当前选中的标签）
+      let baseIndex = -1;
+
+      if (currentLabel) {
+        baseIndex = visibleChildren.findIndex((c) => c === currentLabel || c.id === currentLabel.id);
+      }
+
+      if (baseIndex === -1) {
+        // 没有可用的基准标签时，回退到当前选中的标签
+        const selected = visibleChildren.find((c) => c.selected === true);
+        baseIndex = selected ? visibleChildren.indexOf(selected) : -1;
+      }
+
+      if (baseIndex === -1) {
+        // 找不到基准标签，选择第一个可见标签
+        const firstLabel = visibleChildren[0];
+        firstLabel.setSelected(true);
+
+        return firstLabel;
+      }
+
+      // 选择基准标签的下一个（最后一个之后循环回第一个）
+      const nextIndex = (baseIndex + 1) % visibleChildren.length;
+      const nextLabel = visibleChildren[nextIndex];
+      nextLabel.setSelected(true);
+
+      return nextLabel;
+    },
+
     /**
      * Change states of tags according to values from result
      * @param {string|string[]} value

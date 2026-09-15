@@ -45,6 +45,7 @@ const ModelAttrs = types
   .model("KeyPointLabelsModel", {
     type: "keypointlabels",
     children: Types.unionArray(["label", "header", "view", "hypertext"]),
+    autoselectnextlabel: types.optional(types.boolean, false),
   })
   .views((self) => ({
     get hasStates() {

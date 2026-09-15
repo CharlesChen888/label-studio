@@ -36,6 +36,10 @@ const _Tool = types
       if (c.type === "keypointlabels" && !c.isSelected) return;
       if (self.annotation.isReadOnly()) return;
 
+      // 创建区域前记录当前选中的标签作为基准，
+      // 因为创建后标签选中状态会被 afterCreateResult 清空
+      const currentLabel = c.selectedLabels?.[0];
+
       const keyPoint = self.createRegion({
         ...self.control?.getSnappedPoint({
           x,
@@ -49,6 +53,11 @@ const _Tool = types
 
       keyPoint.setDrawing(false);
       keyPoint.notifyDrawingFinished();
+
+      // 如果开启了自动选择下一个标签，自动选择下一个标签
+      if (c.autoselectnextlabel) {
+        c.selectNextLabel(currentLabel);
+      }
     },
   }));
 
