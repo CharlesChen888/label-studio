@@ -26,6 +26,7 @@ const ToolView = observer(({ item }) => {
           maxIcon={<IconBrightnessTool style={{ width: 22, height: 22, opacity: 0.8 }} />}
           value={item.brightness}
           max={Constants.BRIGHTNESS_MAX}
+          resetValue={Constants.BRIGHTNESS_VALUE}
           onChange={(val) => {
             item.setStroke(val);
           }}
