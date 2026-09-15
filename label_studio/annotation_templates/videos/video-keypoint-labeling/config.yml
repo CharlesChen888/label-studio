@@ -1,0 +1,31 @@
+title: Video Keypoint Labeling
+type: community
+group: Videos
+image: /static/templates/keypoints.png
+details: |
+  <h1>Annotate keypoints on video frames</h1>
+  <dl>
+    <dt>Industry Applications</dt>
+    <dd>action recognition, pose estimation, sports analytics, medical video analysis, behavior analysis, human-computer interaction, gait analysis, dance choreography, animation, motion capture, robotics, autonomous vehicles</dd>
+    <dt>Associated Models</dt>
+    <dd>OpenPose, MediaPipe, RTMPose, AlphaPose, VideoPose3D, SlowPose, ST-GCN, ViTPose</dd>
+    <dt>Domain Terminology</dt>
+    <dd>keypoint tracking, pose estimation, landmark detection, skeleton tracking, temporal keypoint consistency, body part localization</dd>
+  </dl>
+config: |
+  <View>
+  <Labels name="videoLabels" toName="video" allowEmpty="true">
+    <Label value="Head" background="#36B37E"/>
+    <Label value="Left Hand" background="#FF5630"/>
+    <Label value="Right Hand" background="#FFAB00"/>
+    <Label value="Foot" background="#00B8D9"/>
+  </Labels>
+
+  <Video name="video" value="$video" framerate="25.0"/>
+
+  <VideoKeyPoint name="kp" toName="video" pointSize="small"/>
+  </View>
+
+  <!--{
+   "video": "/static/samples/opossum_snow.mp4"
+  }-->
