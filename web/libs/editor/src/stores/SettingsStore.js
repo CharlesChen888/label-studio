@@ -31,6 +31,11 @@ const SettingsModel = types
      */
     continuousLabeling: false,
 
+    /**
+     * Auto-select the next label after creating a keypoint
+     */
+    autoSelectNextLabel: false,
+
     // select regions after creating them
     selectAfterCreate: false,
 
@@ -155,6 +160,10 @@ const SettingsModel = types
 
     toggleContinuousLabeling() {
       self.continuousLabeling = !self.continuousLabeling;
+    },
+
+    toggleAutoSelectNextLabel() {
+      self.autoSelectNextLabel = !self.autoSelectNextLabel;
     },
 
     toggleSelectAfterCreate() {

@@ -54,8 +54,9 @@ const _Tool = types
       keyPoint.setDrawing(false);
       keyPoint.notifyDrawingFinished();
 
-      // 如果开启了自动选择下一个标签，自动选择下一个标签
-      if (c.autoselectnextlabel) {
+      // 如果开启了自动选择下一个标签（XML 配置或标注页面设置面板），自动选择下一个标签
+      const autoSelectNextLabel = c.autoselectnextlabel || self.annotation.store.settings.autoSelectNextLabel;
+      if (autoSelectNextLabel) {
         c.selectNextLabel(currentLabel);
       }
     },

@@ -45,6 +45,15 @@ export default {
     onChangeEvent: "toggleContinuousLabeling",
     defaultValue: false,
   },
+  autoSelectNextLabel: {
+    newUI: {
+      title: "Auto select next label",
+      description: "Automatically selects the next label after creating a keypoint",
+    },
+    description: "Auto-select the next label after creating a keypoint",
+    onChangeEvent: "toggleAutoSelectNextLabel",
+    defaultValue: false,
+  },
   selectAfterCreate: {
     newUI: {
       title: "Select region after creating it",
