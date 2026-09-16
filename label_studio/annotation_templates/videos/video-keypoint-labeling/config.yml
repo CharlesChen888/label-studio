@@ -14,7 +14,7 @@ details: |
   </dl>
 config: |
   <View>
-  <Labels name="videoLabels" toName="video" allowEmpty="true">
+  <Labels name="videoLabels" toName="video">
     <Label value="Head" background="#36B37E"/>
     <Label value="Left Hand" background="#FF5630"/>
     <Label value="Right Hand" background="#FFAB00"/>
