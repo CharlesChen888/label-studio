@@ -467,6 +467,12 @@ const Model = types
           return;
         }
 
+        // Don't allow placing a keypoint when labels exist but none are selected
+        if (self.hasStates) {
+          const activeStates = self.activeStates();
+          if (!activeStates || activeStates.length === 0) return;
+        }
+
         const pointRadii = { small: 4, medium: 7, large: 10 };
         const pointRadius = pointRadii[control.pointsize] ?? pointRadii.small;
         const workingWidth = self.workingArea?.realWidth;
