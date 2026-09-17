@@ -186,12 +186,14 @@ class OrganizationMemberListAPI(generics.ListAPIView):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         contributed_to_projects = bool_from_request(self.request.GET, 'contributed_to_projects', False)
+        org = generics.get_object_or_404(self.request.user.organizations, pk=self.kwargs[self.lookup_field])
         return {
             'contributed_to_projects': contributed_to_projects,
             'created_projects_map': self._get_created_projects_map() if contributed_to_projects else None,
             'contributed_to_projects_map': self._get_contributed_to_projects_map()
             if contributed_to_projects
             else None,
+            'organization': org,
             **context,
         }
 
@@ -324,6 +326,162 @@ class OrganizationMemberDetailAPI(GetParentObjectMixin, generics.RetrieveDestroy
         """Perform the actual member removal. Override in subclasses to add pre-delete hooks."""
         member.soft_delete()
         return Response(status=204)  # 204 No Content is a common HTTP status for successful delete requests
+
+
+@method_decorator(
+    name='get',
+    decorator=extend_schema(
+        tags=['Organizations'],
+        summary='Get organization member contributions',
+        description='Get detailed contribution statistics for an organization member including annotations over time.',
+        parameters=[
+            OpenApiParameter(
+                name='user_pk',
+                type=OpenApiTypes.INT,
+                location='path',
+                description='A unique integer value identifying the user to get contribution details for.',
+            ),
+            OpenApiParameter(
+                name='contributed_to_projects',
+                type=OpenApiTypes.BOOL,
+                location='query',
+                description='Whether to include projects created and contributed to by the member.',
+            ),
+        ],
+        responses={200: OrganizationMemberSerializer()},
+        extensions={
+            'x-fern-sdk-group-name': ['organizations', 'members'],
+            'x-fern-sdk-method-name': 'get_contributions',
+            'x-fern-audiences': ['public'],
+        },
+    ),
+)
+class OrganizationMemberContributionsAPI(GetParentObjectMixin, generics.GenericAPIView):
+    """Get detailed contribution statistics for an organization member."""
+    permission_required = ViewClassPermission(
+        GET=all_permissions.organizations_view,
+    )
+    parent_queryset = Organization.objects.all()
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = OrganizationMemberSerializer
+    http_method_names = ['get']
+
+    @property
+    def permission_classes(self):
+        return api_settings.DEFAULT_PERMISSION_CLASSES
+
+    def get_queryset(self):
+        return OrganizationMember.objects.filter(organization=self.parent_object).select_related('user')
+
+    def get_serializer_context(self):
+        return {
+            **super().get_serializer_context(),
+            'organization': self.parent_object,
+            'contributed_to_projects': bool_from_request(self.request.GET, 'contributed_to_projects', False),
+        }
+
+    def get(self, request, pk, user_pk):
+        """Get contribution statistics for a specific member."""
+        queryset = self.get_queryset()
+        member = get_object_or_404(queryset, user=user_pk)
+        self.check_object_permissions(request, member)
+        
+        # Get contribution data
+        org = self.parent_object
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
+        
+        # Get total annotations count
+        total_annotations = member.user.annotations.filter(project__organization=org).count()
+        
+        # Get cancelled annotations count
+        cancelled_annotations = member.user.annotations.filter(project__organization=org, was_cancelled=True).count()
+        
+        # Get accepted annotations count (last_action is 'accepted')
+        accepted_annotations = member.user.annotations.filter(project__organization=org, last_action='accepted').count()
+        
+        # Get rejected annotations count (last_action is 'rejected')
+        rejected_annotations = member.user.annotations.filter(project__organization=org, last_action='rejected').count()
+        
+        # Get annotations by date (last 30 days)
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=29)
+        
+        annotations_by_date = {}
+        current_date = start_date
+        while current_date <= end_date:
+            annotations_by_date[current_date.strftime('%Y-%m-%d')] = 0
+            current_date += timedelta(days=1)
+        
+        # Fill in actual counts using TruncDate for proper date grouping
+        date_annotations = (
+            member.user.annotations
+            .filter(project__organization=org, created_at__date__range=[start_date, end_date])
+            .annotate(date=TruncDate('created_at'))
+            .values('date')
+            .annotate(count=Count('id'))
+            .order_by('date')
+        )
+        
+        for annotation in date_annotations:
+            date_str = annotation['date'].strftime('%Y-%m-%d')
+            annotations_by_date[date_str] = annotation['count']
+        
+        # Get contributed projects if requested
+        contributed_projects = None
+        if bool_from_request(self.request.GET, 'contributed_to_projects', False):
+            projects = (
+                member.user.annotations.filter(project__organization=org)
+                .values('project__id', 'project__title')
+                .distinct()[:100]
+            )
+            contributed_projects = [
+                {'id': p['project__id'], 'title': p['project__title']}
+                for p in projects
+            ]
+        
+        # Get created projects if requested
+        created_projects = None
+        if bool_from_request(self.request.GET, 'contributed_to_projects', False):
+            projects = (
+                org.projects.filter(created_by=member.user)
+                .values('id', 'title')
+            )
+            created_projects = [
+                {'id': p['id'], 'title': p['title']}
+                for p in projects
+            ]
+        
+        # Return response with contribution data
+        from users.models import User
+        
+        # Simple user data without complex serializer logic
+        user_data = {
+            'id': member.user.id,
+            'email': member.user.email,
+            'first_name': member.user.first_name,
+            'last_name': member.user.last_name,
+            'avatar': member.user.avatar_url,
+            'last_activity': member.user.last_activity,
+            'initials': member.user.get_initials(),
+            'date_joined': member.user.date_joined,
+        }
+        
+        return Response({
+            'user': user_data,
+            'organization': org.id,
+            'annotations_count': total_annotations,
+            'cancelled_annotations_count': cancelled_annotations,
+            'accepted_annotations_count': accepted_annotations,
+            'rejected_annotations_count': rejected_annotations,
+            'contributed_projects_count': member.user.annotations.filter(project__organization=org).values('project').distinct().count(),
+            'annotations_by_date': annotations_by_date,
+            'created_projects': created_projects,
+            'contributed_to_projects': contributed_projects,
+            'role': member.role,
+        })
 
 
 @method_decorator(

@@ -67,6 +67,74 @@
     margin-bottom: 0;
   }
 
+  &__stats-cards {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  &__stat-card {
+    flex: 1;
+    padding: 12px;
+    background: var(--color-neutral-surface);
+    border: 1px solid var(--color-neutral-border);
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  &__stat-value {
+    font-size: 1.75em;
+    font-weight: 600;
+    color: var(--color-primary-content);
+  }
+
+  &__stat-label {
+    font-size: 0.75em;
+    color: var(--color-neutral-content-subtler);
+    margin-top: 4px;
+  }
+
+  &__heatmap {
+    margin-top: 16px;
+  }
+
+  &__heatmap-title {
+    font-size: 0.875em;
+    color: var(--color-neutral-content);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  &__heatmap-grid {
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+
+  &__heatmap-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    transition: transform 0.1s;
+
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+
+  &__heatmap-tooltip {
+    position: absolute;
+    background: var(--color-neutral-surface);
+    border: 1px solid var(--color-neutral-border);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    color: var(--color-neutral-content);
+    pointer-events: none;
+    z-index: 10;
+  }
+
   &__links-list {
     display: flex;
     flex-direction: column;

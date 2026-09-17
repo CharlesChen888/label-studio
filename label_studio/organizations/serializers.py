@@ -48,6 +48,8 @@ class OrganizationMemberListParamsSerializer(serializers.Serializer):
 class UserOrganizationMemberListSerializer(UserSerializer):
     created_projects = serializers.SerializerMethodField(read_only=True)
     contributed_to_projects = serializers.SerializerMethodField(read_only=True)
+    annotations_count = serializers.SerializerMethodField(read_only=True)
+    contributed_projects_count = serializers.SerializerMethodField(read_only=True)
 
     def get_created_projects(self, user) -> list[ProjectInfo] | None:
         if not self.context.get('contributed_to_projects', False):
@@ -61,8 +63,20 @@ class UserOrganizationMemberListSerializer(UserSerializer):
         contributed_to_projects_map = self.context.get('contributed_to_projects_map', {})
         return contributed_to_projects_map.get(user.id, [])
 
+    def get_annotations_count(self, user) -> int:
+        org = self.context.get('organization')
+        if not org:
+            return 0
+        return user.annotations.filter(project__organization=org).count()
+
+    def get_contributed_projects_count(self, user) -> int:
+        org = self.context.get('organization')
+        if not org:
+            return 0
+        return user.annotations.filter(project__organization=org).values('project').distinct().count()
+
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ('created_projects', 'contributed_to_projects')
+        fields = UserSerializer.Meta.fields + ('created_projects', 'contributed_to_projects', 'annotations_count', 'contributed_projects_count')
 
 
 class OrganizationMemberListSerializer(DynamicFieldsMixin, serializers.ModelSerializer):
@@ -134,6 +148,39 @@ class OrganizationMemberSerializer(DynamicFieldsMixin, serializers.ModelSerializ
             for annotation in annotations
         ]
 
+    def get_annotations_by_date(self, member) -> dict:
+        """Get annotation count by date for the last 30 days"""
+        org = self.context.get('organization')
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(days=29)
+        
+        annotations = (
+            member.user.annotations
+            .filter(project__organization=org, created_at__date__range=[start_date, end_date])
+            .values('created_at__date')
+            .annotate(count=Count('id'))
+            .order_by('created_at__date')
+        )
+        
+        # Create a dictionary with all dates in the range
+        annotations_by_date = {}
+        current_date = start_date
+        while current_date <= end_date:
+            annotations_by_date[current_date.strftime('%Y-%m-%d')] = 0
+            current_date += timedelta(days=1)
+        
+        # Fill in the actual counts
+        for annotation in annotations:
+            date_str = annotation['created_at__date'].strftime('%Y-%m-%d')
+            annotations_by_date[date_str] = annotation['count']
+        
+        return annotations_by_date
+
     class Meta:
         model = OrganizationMember
         fields = [
@@ -141,6 +188,7 @@ class OrganizationMemberSerializer(DynamicFieldsMixin, serializers.ModelSerializ
             'organization',
             'contributed_projects_count',
             'annotations_count',
+            'annotations_by_date',
             'created_at',
             'created_projects',
             'contributed_to_projects',

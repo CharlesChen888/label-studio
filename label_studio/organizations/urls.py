@@ -25,6 +25,12 @@ _api_urlpattens = [
         api.OrganizationMemberDetailAPI.as_view(),
         name='organization-membership-detail',
     ),
+    # organization membership contributions endpoint
+    path(
+        '<int:pk>/memberships/<int:user_pk>/contributions',
+        api.OrganizationMemberContributionsAPI.as_view(),
+        name='organization-membership-contributions',
+    ),
     # organization membership role update
     path(
         '<int:pk>/memberships/<int:user_pk>/role/',
