@@ -99,6 +99,20 @@ const KeyPointLabelsModel = types
       });
     },
 
+    isLabelAllowed(label, itemIndex = null) {
+      if (!self.sequence) return true;
+
+      const labels = self.sequenceLabels;
+      if (!labels.length) return true;
+
+      const labelIndex = labels.findIndex((l) => l.value === label.value);
+      if (labelIndex === -1) return true;
+
+      const numFilled = self._getSequenceRegions({ itemIndex }).length;
+
+      return labelIndex <= numFilled;
+    },
+
     rebalanceSequenceLabels({ insertedRegion = null, insertionLabel = null, removedRegion = null, itemIndex = null } = {}) {
       if (!self.sequence) return;
 

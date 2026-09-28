@@ -40,6 +40,10 @@ const _Tool = types
       // 因为创建后标签选中状态会被 afterCreateResult 清空
       const currentLabel = c.selectedLabels?.[0];
 
+      if (c.isLabelAllowed && !c.isLabelAllowed(currentLabel)) {
+        return;
+      }
+
       const keyPoint = self.createRegion({
         ...self.control?.getSnappedPoint({
           x,
