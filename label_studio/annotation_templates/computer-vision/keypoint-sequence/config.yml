@@ -1,0 +1,24 @@
+title: Keypoint Sequence Labeling
+type: community
+group: Computer Vision
+order: 10010
+image: /static/templates/keypoints.png
+details: |
+  <h1>Annotate ordered keypoint sequences</h1>
+  <dl>
+    <dt>What it does</dt>
+    <dd>All keypoints on one image are treated as an ordered queue. Labels are assigned in label order and auto-rebalanced when inserting or deleting points.</dd>
+    <dt>How to insert in the middle</dt>
+    <dd>Select the target label in the sequence and click to add a point. Following points are relabeled automatically.</dd>
+  </dl>
+config: |
+  <View>
+    <KeyPointLabels name="kp-seq" toName="img-1" sequence="true" autoselectnextlabel="true">
+      <Label value="P1" background="#ef4444" />
+      <Label value="P2" background="#f59e0b" />
+      <Label value="P3" background="#10b981" />
+      <Label value="P4" background="#3b82f6" />
+      <Label value="P5" background="#6366f1" />
+    </KeyPointLabels>
+    <Image name="img-1" value="$img" brightnessControl="true" />
+  </View>

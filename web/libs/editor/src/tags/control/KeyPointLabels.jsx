@@ -34,6 +34,7 @@ import ControlBase from "./Base";
  * @param {float=} [opacity=0.9]         - Opacity of the keypoint
  * @param {number=} [strokeWidth=1]      - Width of the stroke
  * @param {pixel|none} [snap=none]       - Snap keypoint to image pixels
+ * @param {boolean} [sequence=false]      - Enable keypoint sequence mode with ordered auto-labeling and relabel on insert/delete
  *
  */
 
@@ -46,12 +47,17 @@ const ModelAttrs = types
     type: "keypointlabels",
     children: Types.unionArray(["label", "header", "view", "hypertext"]),
     autoselectnextlabel: types.optional(types.boolean, false),
+    sequence: types.optional(types.boolean, false),
   })
   .views((self) => ({
     get hasStates() {
       const states = self.states();
 
       return states && states.length > 0;
+    },
+
+    get sequenceLabels() {
+      return self.tiedChildren.filter((label) => label?.isEmpty !== true);
     },
   }));
 
@@ -65,7 +71,85 @@ const Composition = types.compose(
   SelectedModelMixin.props({ _child: "LabelModel" }),
 );
 
-const KeyPointLabelsModel = types.compose("KeyPointLabelsModel", Composition);
+const KeyPointLabelsModel = types
+  .compose("KeyPointLabelsModel", Composition)
+  .actions((self) => ({
+    _getSequenceResult(region) {
+      if (!region?.results) return null;
+
+      return region.results.find((result) => result.from_name === self && result.type === self.resultType) ?? null;
+    },
+
+    _getRegionLabelOrderIndex(region, labels) {
+      const result = self._getSequenceResult(region);
+      const labelValue = result?.mainValue?.[0];
+      const index = labels.findIndex((label) => label.value === labelValue);
+
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    },
+
+    _getSequenceRegions({ itemIndex = null, removedRegion = null } = {}) {
+      return self.annotation.regionStore.regions.filter((region) => {
+        if (region === removedRegion) return false;
+        if (region.type !== "keypointregion") return false;
+        if (region.object?.name !== self.toname) return false;
+        if ((region.item_index ?? null) !== itemIndex) return false;
+
+        return !!self._getSequenceResult(region);
+      });
+    },
+
+    rebalanceSequenceLabels({ insertedRegion = null, insertionLabel = null, removedRegion = null, itemIndex = null } = {}) {
+      if (!self.sequence) return;
+
+      const labels = self.sequenceLabels;
+
+      if (!labels.length) return;
+
+      const targetItemIndex = itemIndex ?? insertedRegion?.item_index ?? removedRegion?.item_index ?? null;
+      const regions = self
+        ._getSequenceRegions({ itemIndex: targetItemIndex, removedRegion })
+        .sort((a, b) => {
+          const aIndex = self._getRegionLabelOrderIndex(a, labels);
+          const bIndex = self._getRegionLabelOrderIndex(b, labels);
+
+          if (aIndex !== bIndex) return aIndex - bIndex;
+
+          return (a.ouid ?? 0) - (b.ouid ?? 0);
+        });
+
+      if (insertedRegion) {
+        const existingIndex = regions.indexOf(insertedRegion);
+
+        if (existingIndex >= 0) regions.splice(existingIndex, 1);
+
+        const insertionValue = insertionLabel?.value ?? insertionLabel;
+        const preferredIndex = labels.findIndex((label) => label.value === insertionValue);
+        const insertionIndex = preferredIndex >= 0 ? Math.min(preferredIndex, regions.length) : regions.length;
+
+        regions.splice(insertionIndex, 0, insertedRegion);
+      }
+
+      regions.forEach((region, index) => {
+        const sequenceLabel = labels[index % labels.length];
+        const result = self._getSequenceResult(region);
+
+        if (!result || !sequenceLabel) return;
+        if (result.mainValue?.[0] === sequenceLabel.value) return;
+
+        result.setValue([sequenceLabel.value]);
+        region.updateAppearenceFromState?.();
+      });
+    },
+
+    onRegionCreated(region, currentLabel) {
+      self.rebalanceSequenceLabels({ insertedRegion: region, insertionLabel: currentLabel });
+    },
+
+    onRegionDelete(region) {
+      self.rebalanceSequenceLabels({ removedRegion: region });
+    },
+  }));
 
 const HtxKeyPointLabels = observer(({ item }) => {
   return <HtxLabels item={item} />;

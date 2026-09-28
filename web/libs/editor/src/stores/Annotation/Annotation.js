@@ -702,6 +702,10 @@ const _Annotation = types
     deleteRegion(region) {
       if (region.isReadOnly()) return;
 
+      region.results?.forEach((result) => {
+        result.from_name?.onRegionDelete?.(region);
+      });
+
       const { regions } = self.regionStore;
       // move all children into the parent region of the given one
       const children = regions.filter((r) => r.parentID === region.id);

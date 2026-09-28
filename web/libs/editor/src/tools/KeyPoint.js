@@ -12,7 +12,7 @@ const _Tool = types
     shortcut: "tool:key-point",
     smart: true,
   })
-  .views(() => ({
+  .views((self) => ({
     get tagTypes() {
       return {
         stateTypes: "keypointlabels",
@@ -53,6 +53,8 @@ const _Tool = types
 
       keyPoint.setDrawing(false);
       keyPoint.notifyDrawingFinished();
+
+      c.onRegionCreated?.(keyPoint, currentLabel);
 
       // 如果开启了自动选择下一个标签（XML 配置或标注页面设置面板），自动选择下一个标签
       const autoSelectNextLabel = c.autoselectnextlabel || self.annotation.store.settings.autoSelectNextLabel;
