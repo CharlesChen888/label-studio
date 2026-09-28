@@ -3,6 +3,7 @@ import {
   IconClockTimeFourOutline,
   IconCursor,
   IconList,
+  IconLsLabeling,
   IconOutlinerEyeClosed,
   IconOutlinerEyeOpened,
   IconPredictions,
@@ -23,7 +24,7 @@ import { observer } from "mobx-react";
 
 export type GroupingOptions = "manual" | "label" | "type";
 
-export type OrderingOptions = "score" | "date" | "mediaStartTime";
+export type OrderingOptions = "score" | "date" | "mediaStartTime" | "labelOrder";
 
 export type OrderingDirection = "asc" | "desc";
 
@@ -136,6 +137,16 @@ export const ViewControls: FC<ViewControlsProps> = observer(
             selectedLabel: "By Media Start Time",
             icon: <IconTimelineRegion width={16} height={16} />,
           };
+        case "labelOrder":
+          return {
+            label: (
+              <>
+                <IconLsLabeling /> Order by Label Order
+              </>
+            ),
+            selectedLabel: "By Label Order",
+            icon: <IconLsLabeling width={16} height={16} />,
+          };
       }
     }, []);
 
@@ -154,7 +165,7 @@ export const ViewControls: FC<ViewControlsProps> = observer(
             <Grouping
               value={ordering}
               direction={orderingDirection}
-              options={mediaTimeSupport ? ["score", "date", "mediaStartTime"] : ["score", "date"]}
+              options={mediaTimeSupport ? ["score", "date", "mediaStartTime", "labelOrder"] : ["score", "date", "labelOrder"]}
               onChange={(value) => onOrderingChange(value)}
               readableValueForKey={getOrderingLabels}
               allowClickSelected

@@ -136,7 +136,7 @@ const SelectionMap = types
 export default types
   .model("RegionStore", {
     sort: types.optional(
-      types.enumeration(["date", "score", "mediaStartTime"]),
+      types.enumeration(["date", "score", "mediaStartTime", "labelOrder"]),
       () => window.localStorage.getItem(localStorageKeys.sort) ?? "date",
     ),
 
@@ -260,6 +260,24 @@ export default types
 
               return isDesc ? bTime - aTime : aTime - bTime;
             }),
+          labelOrder: (isDesc) => {
+            const labelIndex = self.getOrderedLabelIndex();
+            const lastIndex = labelIndex.size;
+
+            // Regions without a known label are pushed to the end
+            const getLabelPos = (region) => {
+              const index = labelIndex.get(region.labelName);
+
+              return index === undefined ? lastIndex : index;
+            };
+
+            return [...self.filteredRegions].sort((a, b) => {
+              const aPos = getLabelPos(a);
+              const bPos = getLabelPos(b);
+
+              return isDesc ? bPos - aPos : aPos - bPos;
+            });
+          },
         };
 
         const sorted = sorts[self.sort](self.sortOrder === "desc");
@@ -273,6 +291,28 @@ export default types
           map[region.id] = idx + 1;
         });
         return map;
+      },
+
+      /**
+       * Build a map from label value -> its index in the labeling configuration.
+       * The order of `annotation.names` follows the order labels appear in the config,
+       * so the index of each label within its labeling control gives the "label order".
+       */
+      getOrderedLabelIndex() {
+        const labelIndex = new Map();
+        const tags = Array.from(self.annotation.names.values());
+
+        tags.forEach((tag) => {
+          if (!tag?.isLabeling || !Array.isArray(tag.children)) return;
+
+          tag.children.forEach((child) => {
+            if (child.type === "label" && isDefined(child.value) && !labelIndex.has(child.value)) {
+              labelIndex.set(child.value, labelIndex.size);
+            }
+          });
+        });
+
+        return labelIndex;
       },
 
       getRegionMediaTime(region) {

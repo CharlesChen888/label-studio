@@ -21,6 +21,7 @@ import "../../tags/visual/View";
 import "../../tags/object/RichText";
 import "../../tags/object/Image/Image.js";
 import "../../tags/control/Rectangle.js";
+import "../../tags/control/Labels/Labels.jsx";
 import { dedupeAnnotationWireResults } from "../../utils/dedupeAnnotationWireResults";
 import AppStore from "../AppStore";
 
@@ -98,6 +99,29 @@ function createStoreWithOneRectRegion() {
 
 function createStoreWithOneRectRegionViaInit() {
   return createStoreWithOneRectRegion();
+}
+
+const CONFIG_WITH_LABELS =
+  '<View><Image name="img" value="$img" /><Labels name="lbl" toName="img"><Label value="Alpha" /><Label value="Beta" /><Label value="Gamma" /></Labels></View>';
+
+function createStoreWithLabeledConfig() {
+  const env = createTestEnv();
+  const task = {
+    id: 1,
+    data: JSON.stringify({ img: "https://example.com/img.jpg" }),
+  };
+  const store = AppStore.create(
+    {
+      config: CONFIG_WITH_LABELS,
+      task,
+      interfaces: ["basic"],
+    },
+    env,
+  );
+  store.initializeStore({});
+  const ann = store.annotationStore.addAnnotation({ result: [] });
+  store.annotationStore.selectAnnotation(ann.id);
+  return { store, annotation: ann, env };
 }
 
 describe("RegionStore", () => {
@@ -275,6 +299,13 @@ describe("RegionStore", () => {
       const { annotation } = createStoreWithAnnotation();
       annotation.regionStore.setSort("score");
       expect(annotation.regionStore.sort).toBe("score");
+      expect(annotation.regionStore.sortOrder).toBe("asc");
+    });
+
+    it("setSort supports labelOrder", () => {
+      const { annotation } = createStoreWithAnnotation();
+      annotation.regionStore.setSort("labelOrder");
+      expect(annotation.regionStore.sort).toBe("labelOrder");
       expect(annotation.regionStore.sortOrder).toBe("asc");
     });
 
@@ -520,6 +551,29 @@ describe("RegionStore", () => {
       const { annotation } = createStoreWithOneRectRegion();
       annotation.regionStore.setSort("score");
       expect(annotation.regionStore.sortedRegions).toHaveLength(1);
+    });
+
+    it("sortedRegions with labelOrder sort returns regions", () => {
+      const { annotation } = createStoreWithOneRectRegion();
+      annotation.regionStore.setSort("labelOrder");
+      const sorted = annotation.regionStore.sortedRegions;
+      expect(sorted).toHaveLength(1);
+      expect(sorted[0]).toBe(annotation.regionStore.regions[0]);
+    });
+
+    it("getOrderedLabelIndex returns an empty map when there are no labels", () => {
+      const { annotation } = createStoreWithOneRectRegion();
+      const index = annotation.regionStore.getOrderedLabelIndex();
+      expect(index instanceof Map).toBe(true);
+      expect(index.size).toBe(0);
+    });
+
+    it("getOrderedLabelIndex maps labels to their config order", () => {
+      const { annotation } = createStoreWithLabeledConfig();
+      const index = annotation.regionStore.getOrderedLabelIndex();
+      expect(index.get("Alpha")).toBe(0);
+      expect(index.get("Beta")).toBe(1);
+      expect(index.get("Gamma")).toBe(2);
     });
 
     it("setHiddenByTool toggles hidden for matching type", () => {

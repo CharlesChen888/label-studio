@@ -11,7 +11,7 @@ import { getDocsUrl } from "../../../utils/docs";
 
 // Local type definitions based on ViewControls and RegionStore
 type GroupingOptions = "manual" | "label" | "type";
-type OrderingOptions = "score" | "date" | "mediaStartTime";
+type OrderingOptions = "score" | "date" | "mediaStartTime" | "labelOrder";
 
 interface OutlinerPanelProps extends PanelProps {
   regions: any;
