@@ -130,8 +130,14 @@ const KeyPointLabelsModel = types
         regions.splice(insertionIndex, 0, insertedRegion);
       }
 
+      if (regions.length > labels.length) {
+        const excessRegions = regions.slice(labels.length);
+        excessRegions.forEach((region) => region.deleteRegion());
+        regions.splice(labels.length);
+      }
+
       regions.forEach((region, index) => {
-        const sequenceLabel = labels[index % labels.length];
+        const sequenceLabel = labels[index];
         const result = self._getSequenceResult(region);
 
         if (!result || !sequenceLabel) return;
