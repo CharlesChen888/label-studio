@@ -13,7 +13,7 @@ details: |
   </dl>
 config: |
   <View>
-    <KeyPointLabels name="kp-seq" toName="img-1" sequence="true" autoselectnextlabel="true">
+    <KeyPointLabels name="kp-1" toName="img-1" sequence="true">
       <Label value="P1" background="#ef4444" />
       <Label value="P2" background="#f59e0b" />
       <Label value="P3" background="#10b981" />
