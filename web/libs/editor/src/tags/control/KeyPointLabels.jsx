@@ -190,13 +190,19 @@ const KeyPointLabelsModel = types
           if (groupRegions.length < 3) continue;
 
           const points = groupRegions.map((region) => [region.x, region.y]);
+
+          // Compute convex hull to ensure the polygon is convex and edges don't cross
+          const hullPoints = computeConvexHull(points);
+
+          if (hullPoints.length < 3) continue;
+
           const groupStartLabel = labels[start]?.value ?? labels[0]?.value;
 
           if (!groupStartLabel) continue;
 
           self.annotation.createResult(
             {
-              points,
+              points: hullPoints,
               closed: true,
               parentID,
             },
@@ -271,6 +277,14 @@ const KeyPointLabelsModel = types
 
       self.rebalanceSequenceLabels({ removedRegion: region });
     },
+
+    onRegionChanged(region) {
+      if (self._isRebuildingGroups) return;
+      if (region.type !== "keypointregion") return;
+
+      // When a keypoint moves, rebuild the auto-grouped polygons so they follow the new positions
+      self._rebuildSequenceGroupPolygons(region.item_index ?? null);
+    },
   }));
 
 const HtxKeyPointLabels = observer(({ item }) => {
@@ -280,3 +294,57 @@ const HtxKeyPointLabels = observer(({ item }) => {
 Registry.addTag("keypointlabels", KeyPointLabelsModel, HtxKeyPointLabels);
 
 export { HtxKeyPointLabels, KeyPointLabelsModel };
+
+/**
+ * Compute the convex hull of a set of 2D points using Graham Scan algorithm.
+ * Returns points in counter-clockwise order forming a convex polygon.
+ * @param {Array<[number, number]>} points - Array of [x, y] coordinate pairs
+ * @returns {Array<[number, number]>} - Convex hull points in CCW order
+ */
+function computeConvexHull(points) {
+  if (points.length < 3) return points;
+
+  // Find the point with the lowest y-coordinate (and leftmost if tied)
+  const startIdx = points.reduce((minIdx, p, i, arr) => {
+    if (p[1] < arr[minIdx][1] || (p[1] === arr[minIdx][1] && p[0] < arr[minIdx][0])) {
+      return i;
+    }
+    return minIdx;
+  }, 0);
+
+  const start = points[startIdx];
+
+  // Sort points by polar angle with start point
+  const sorted = points
+    .map((p, i) => ({ point: p, index: i }))
+    .filter(({ index }) => index !== startIdx)
+    .sort((a, b) => {
+      const angleA = Math.atan2(a.point[1] - start[1], a.point[0] - start[0]);
+      const angleB = Math.atan2(b.point[1] - start[1], b.point[0] - start[0]);
+
+      if (angleA !== angleB) return angleA - angleB;
+
+      // If angles are equal, sort by distance (farther first)
+      const distA = (a.point[0] - start[0]) ** 2 + (a.point[1] - start[1]) ** 2;
+      const distB = (b.point[0] - start[0]) ** 2 + (b.point[1] - start[1]) ** 2;
+      return distB - distA;
+    })
+    .map(({ point }) => point);
+
+  // Cross product of vectors OA and OB
+  const cross = (O, A, B) => {
+    return (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+  };
+
+  // Graham Scan
+  const hull = [start, sorted[0]];
+
+  for (let i = 1; i < sorted.length; i++) {
+    while (hull.length > 1 && cross(hull[hull.length - 2], hull[hull.length - 1], sorted[i]) <= 0) {
+      hull.pop();
+    }
+    hull.push(sorted[i]);
+  }
+
+  return hull;
+}

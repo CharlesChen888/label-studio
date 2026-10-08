@@ -211,21 +211,13 @@ const LabelOnPolygon = observer(({ item, color }) => {
 
   const settings = getRoot(item).settings;
 
+  // Auto-grouped polygons from keypoint sequence should not show their own labels
+  const isAutoGroupedPolygon = item.parentID?.startsWith?.("__kp-seq-group__");
+
+  if (isAutoGroupedPolygon) return null;
+
   return (
     <Fragment>
-      {settings.showLabels && (
-        <Rect
-          x={bbox.left}
-          y={bbox.top}
-          fillEnabled={false}
-          width={bbox.right - bbox.left}
-          height={bbox.bottom - bbox.top}
-          stroke={item.style?.strokecolor}
-          strokeWidth={1}
-          strokeScaleEnabled={false}
-          shadowBlur={0}
-        />
-      )}
       <LabelOnBbox
         x={bbox.left}
         y={bbox.top + 2 / item.parent.zoomScale}

@@ -188,6 +188,7 @@ const HtxKeyPointView = ({ item, setShapeRef }) => {
           t.setAttr("y", item.canvasY);
           item.annotation.history.unfreeze(item.id);
           item.notifyDrawingFinished();
+          item.control?.onRegionChanged?.(item);
         }}
         dragBoundFunc={createDragBoundFunc(item)}
         transformsEnabled="position"

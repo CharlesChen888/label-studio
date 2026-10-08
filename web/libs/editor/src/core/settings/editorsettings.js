@@ -56,6 +56,7 @@ export default {
   },
   keypointSequenceGroupSize: {
     newUI: {
+      tags: "Image Tag",
       title: "Keypoint sequence group size",
       description: "Number of points per auto-group when keypoint sequence grouping is enabled",
     },
@@ -63,7 +64,9 @@ export default {
     onChangeEvent: "setKeypointSequenceGroupSize",
     type: "number",
     min: 3,
+    max: 50,
     step: 1,
+    width: "60px",
     defaultValue: 5,
   },
   selectAfterCreate: {

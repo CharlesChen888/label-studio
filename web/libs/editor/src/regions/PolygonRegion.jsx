@@ -506,6 +506,9 @@ const HtxPolygonView = ({ item, setShapeRef }) => {
   const { store } = item;
   const { suggestion } = useContext(ImageViewContext) ?? {};
 
+  // Check if this is an auto-grouped polygon from keypoint sequence
+  const isAutoGroupedPolygon = item.parentID?.startsWith?.("__kp-seq-group__");
+
   const regionStyles = useRegionStyles(item, {
     useStrokeAsFill: true,
   });
@@ -604,6 +607,9 @@ const HtxPolygonView = ({ item, setShapeRef }) => {
         item.updateCursor();
       }}
       onClick={(e) => {
+        // Auto-grouped polygons should not be selectable
+        if (isAutoGroupedPolygon) return;
+
         // create regions over another regions with Cmd/Ctrl pressed
         if (item.parent.getSkipInteractions()) return;
         if (item.isDrawing) return;
@@ -620,8 +626,8 @@ const HtxPolygonView = ({ item, setShapeRef }) => {
         item.onClickRegion(e);
       }}
       {...dragProps}
-      draggable={!item.isReadOnly() && (!item.inSelection || item.parent?.selectedRegions?.length === 1)}
-      listening={!suggestion}
+      draggable={!isAutoGroupedPolygon && !item.isReadOnly() && (!item.inSelection || item.parent?.selectedRegions?.length === 1)}
+      listening={!isAutoGroupedPolygon && !suggestion}
     >
       <LabelOnPolygon item={item} color={regionStyles.strokeColor} />
 
@@ -630,13 +636,16 @@ const HtxPolygonView = ({ item, setShapeRef }) => {
       {item.points && item.closed ? (
         <Poly
           item={item}
-          colors={regionStyles}
+          colors={{
+            ...regionStyles,
+            fillColor: isAutoGroupedPolygon ? "rgba(100, 100, 255, 0.08)" : regionStyles.fillColor,
+          }}
           dragProps={dragProps}
-          draggable={!item.isReadOnly() && item.inSelection && item.parent?.selectedRegions?.length > 1}
+          draggable={!isAutoGroupedPolygon && !item.isReadOnly() && item.inSelection && item.parent?.selectedRegions?.length > 1}
         />
       ) : null}
-      {item.points && !item.isReadOnly() ? <Edges item={item} regionStyles={regionStyles} /> : null}
-      {item.points && !item.isReadOnly() ? renderCircles(item.points) : null}
+      {item.points && !item.isReadOnly() && !isAutoGroupedPolygon ? <Edges item={item} regionStyles={regionStyles} /> : null}
+      {item.points && !item.isReadOnly() && !isAutoGroupedPolygon ? renderCircles(item.points) : null}
     </Group>
   );
 };

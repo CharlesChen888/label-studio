@@ -17,6 +17,10 @@ const localStorageKeys = {
   view: "regionstore:view",
 };
 
+const isAutoGroupedSequencePolygon = (region) => {
+  return region?.type === "polygonregion" && region?.parentID?.startsWith?.("__kp-seq-group__:");
+};
+
 const SelectionMap = types
   .model({
     selected: types.optional(types.map(types.safeReference(AllRegionsType)), {}),
@@ -243,13 +247,15 @@ export default types
       },
 
       get sortedRegions() {
+        const regionsForList = self.filteredRegions.filter((region) => !isAutoGroupedSequencePolygon(region));
+
         const sorts = {
           date: (isDesc) =>
-            [...self.filteredRegions].sort(isDesc ? (a, b) => b.ouid - a.ouid : (a, b) => a.ouid - b.ouid),
+            [...regionsForList].sort(isDesc ? (a, b) => b.ouid - a.ouid : (a, b) => a.ouid - b.ouid),
           score: (isDesc) =>
-            [...self.filteredRegions].sort(isDesc ? (a, b) => b.score - a.score : (a, b) => a.score - b.score),
+            [...regionsForList].sort(isDesc ? (a, b) => b.score - a.score : (a, b) => a.score - b.score),
           mediaStartTime: (isDesc) =>
-            [...self.filteredRegions].sort((a, b) => {
+            [...regionsForList].sort((a, b) => {
               const aTime = self.getRegionMediaTime(a);
               const bTime = self.getRegionMediaTime(b);
 
@@ -271,7 +277,7 @@ export default types
               return index === undefined ? lastIndex : index;
             };
 
-            return [...self.filteredRegions].sort((a, b) => {
+            return [...regionsForList].sort((a, b) => {
               const aPos = getLabelPos(a);
               const bPos = getLabelPos(b);
 

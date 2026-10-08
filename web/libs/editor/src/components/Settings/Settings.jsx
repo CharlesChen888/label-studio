@@ -122,6 +122,7 @@ const GeneralSettings = observer(({ store }) => {
                   min={setting.min}
                   max={setting.max}
                   step={setting.step}
+                  style={{ width: setting.width || "100%" }}
                   onChange={(event) => {
                     const rawValue = event.target.value;
                     const value = settingType === "number" ? Number(rawValue) : rawValue;

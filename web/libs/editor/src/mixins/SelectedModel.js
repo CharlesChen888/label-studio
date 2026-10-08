@@ -115,6 +115,7 @@ const SelectedModelMixin = types
       if (baseIndex === -1) {
         // 找不到基准标签，选择第一个可见标签
         const firstLabel = visibleChildren[0];
+        self.unselectAll();
         firstLabel.setSelected(true);
 
         return firstLabel;
@@ -123,6 +124,7 @@ const SelectedModelMixin = types
       // 选择基准标签的下一个（最后一个之后循环回第一个）
       const nextIndex = (baseIndex + 1) % visibleChildren.length;
       const nextLabel = visibleChildren[nextIndex];
+      self.unselectAll();
       nextLabel.setSelected(true);
 
       return nextLabel;
