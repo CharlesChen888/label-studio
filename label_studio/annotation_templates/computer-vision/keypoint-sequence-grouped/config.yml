@@ -1,0 +1,27 @@
+title: Keypoint Sequence Grouping
+type: community
+group: Computer Vision
+order: 10020
+image: /static/templates/keypoints.png
+details: |
+  <h1>Annotate grouped keypoint sequences</h1>
+  <dl>
+    <dt>What it does</dt>
+    <dd>All keypoints on one image are treated as an ordered queue. Labels are assigned in label order and auto-rebalanced when inserting or deleting points.</dd>
+    <dt>Auto grouping</dt>
+    <dd>Sequence points are automatically split into groups and each group is connected as a polygon. You can set the points-per-group value in the labeling settings panel. The final group keeps all remaining points.</dd>
+  </dl>
+config: |
+  <View>
+    <KeyPointLabels name="kp-1" toName="img-1" sequence="true" autogroup="true">
+      <Label value="P1" background="#ef4444" />
+      <Label value="P2" background="#f59e0b" />
+      <Label value="P3" background="#10b981" />
+      <Label value="P4" background="#3b82f6" />
+      <Label value="P5" background="#6366f1" />
+      <Label value="P6" background="#8b5cf6" />
+      <Label value="P7" background="#ec4899" />
+      <Label value="P8" background="#14b8a6" />
+    </KeyPointLabels>
+    <Image name="img-1" value="$img" brightnessControl="true" />
+  </View>

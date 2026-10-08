@@ -35,6 +35,8 @@ import ControlBase from "./Base";
  * @param {number=} [strokeWidth=1]      - Width of the stroke
  * @param {pixel|none} [snap=none]       - Snap keypoint to image pixels
  * @param {boolean} [sequence=false]      - Enable keypoint sequence mode with ordered auto-labeling and relabel on insert/delete
+ * @param {boolean} [autogroup=false]     - Enable automatic grouping of sequence keypoints into polygon regions
+ * @param {number} [groupSize=3]          - Fallback group size when auto grouping is enabled and no UI override is set
  *
  */
 
@@ -48,6 +50,8 @@ const ModelAttrs = types
     children: Types.unionArray(["label", "header", "view", "hypertext"]),
     autoselectnextlabel: types.optional(types.boolean, false),
     sequence: types.optional(types.boolean, false),
+    autogroup: types.optional(types.boolean, false),
+    groupsize: types.maybeNull(types.string),
   })
   .views((self) => ({
     get hasStates() {
@@ -58,6 +62,10 @@ const ModelAttrs = types
 
     get sequenceLabels() {
       return self.tiedChildren.filter((label) => label?.isEmpty !== true);
+    },
+
+    get sequenceGroupingEnabled() {
+      return self.sequence && self.autogroup;
     },
   }));
 
@@ -73,7 +81,16 @@ const Composition = types.compose(
 
 const KeyPointLabelsModel = types
   .compose("KeyPointLabelsModel", Composition)
+  .volatile(() => ({
+    _isRebuildingGroups: false,
+  }))
   .actions((self) => ({
+    _getAutoGroupParentId(itemIndex = null) {
+      const itemPart = itemIndex ?? "null";
+
+      return `__kp-seq-group__:${self.name}:${itemPart}`;
+    },
+
     _getSequenceResult(region) {
       if (!region?.results) return null;
 
@@ -99,6 +116,103 @@ const KeyPointLabelsModel = types
       });
     },
 
+    _getOrderedSequenceRegions({ itemIndex = null, insertedRegion = null, insertionLabel = null, removedRegion = null } = {}) {
+      const labels = self.sequenceLabels;
+      const regions = self
+        ._getSequenceRegions({ itemIndex, removedRegion })
+        .sort((a, b) => {
+          const aIndex = self._getRegionLabelOrderIndex(a, labels);
+          const bIndex = self._getRegionLabelOrderIndex(b, labels);
+
+          if (aIndex !== bIndex) return aIndex - bIndex;
+
+          return (a.ouid ?? 0) - (b.ouid ?? 0);
+        });
+
+      if (insertedRegion) {
+        const existingIndex = regions.indexOf(insertedRegion);
+
+        if (existingIndex >= 0) regions.splice(existingIndex, 1);
+
+        const insertionValue = insertionLabel?.value ?? insertionLabel;
+        const preferredIndex = labels.findIndex((label) => label.value === insertionValue);
+        const insertionIndex = preferredIndex >= 0 ? Math.min(preferredIndex, regions.length) : regions.length;
+
+        regions.splice(insertionIndex, 0, insertedRegion);
+      }
+
+      return regions;
+    },
+
+    _getSequenceGroupSize() {
+      const fromSettings = Number(self.annotation?.store?.settings?.keypointSequenceGroupSize);
+      const fromTag = Number(self.groupsize);
+      const sequenceGroupSize = Number.isFinite(fromSettings) && fromSettings >= 3 ? Math.floor(fromSettings) : fromTag;
+
+      if (!Number.isFinite(sequenceGroupSize) || sequenceGroupSize < 3) return 3;
+
+      return Math.floor(sequenceGroupSize);
+    },
+
+    _getAutoGroupPolygonRegions(itemIndex = null) {
+      const parentID = self._getAutoGroupParentId(itemIndex);
+
+      return self.annotation.regionStore.regions.filter((region) => {
+        if (region.type !== "polygonregion") return false;
+        if (region.parentID !== parentID) return false;
+        if (region.object?.name !== self.toname) return false;
+        if ((region.item_index ?? null) !== itemIndex) return false;
+
+        return region.results.some((result) => result.from_name === self && result.type === self.resultType);
+      });
+    },
+
+    _rebuildSequenceGroupPolygons(itemIndex = null) {
+      if (!self.sequenceGroupingEnabled || self._isRebuildingGroups) return;
+
+      const objectTag = self.annotation.names.get(self.toname);
+
+      if (!objectTag) return;
+
+      const labels = self.sequenceLabels;
+      const orderedRegions = self._getOrderedSequenceRegions({ itemIndex });
+      const groupSize = self._getSequenceGroupSize();
+      const parentID = self._getAutoGroupParentId(itemIndex);
+
+      self._isRebuildingGroups = true;
+
+      try {
+        self._getAutoGroupPolygonRegions(itemIndex).forEach((region) => region.deleteRegion());
+
+        for (let start = 0; start < orderedRegions.length; start += groupSize) {
+          const groupRegions = orderedRegions.slice(start, start + groupSize);
+
+          if (groupRegions.length < 3) continue;
+
+          const points = groupRegions.map((region) => [region.x, region.y]);
+          const groupStartLabel = labels[start]?.value ?? labels[0]?.value;
+
+          if (!groupStartLabel) continue;
+
+          self.annotation.createResult(
+            {
+              points,
+              closed: true,
+              parentID,
+            },
+            {
+              [self.valueType]: [groupStartLabel],
+            },
+            self,
+            objectTag,
+            true,
+          );
+        }
+      } finally {
+        self._isRebuildingGroups = false;
+      }
+    },
+
     isLabelAllowed(label, itemIndex = null) {
       if (!self.sequence) return true;
 
@@ -121,28 +235,12 @@ const KeyPointLabelsModel = types
       if (!labels.length) return;
 
       const targetItemIndex = itemIndex ?? insertedRegion?.item_index ?? removedRegion?.item_index ?? null;
-      const regions = self
-        ._getSequenceRegions({ itemIndex: targetItemIndex, removedRegion })
-        .sort((a, b) => {
-          const aIndex = self._getRegionLabelOrderIndex(a, labels);
-          const bIndex = self._getRegionLabelOrderIndex(b, labels);
-
-          if (aIndex !== bIndex) return aIndex - bIndex;
-
-          return (a.ouid ?? 0) - (b.ouid ?? 0);
-        });
-
-      if (insertedRegion) {
-        const existingIndex = regions.indexOf(insertedRegion);
-
-        if (existingIndex >= 0) regions.splice(existingIndex, 1);
-
-        const insertionValue = insertionLabel?.value ?? insertionLabel;
-        const preferredIndex = labels.findIndex((label) => label.value === insertionValue);
-        const insertionIndex = preferredIndex >= 0 ? Math.min(preferredIndex, regions.length) : regions.length;
-
-        regions.splice(insertionIndex, 0, insertedRegion);
-      }
+      const regions = self._getOrderedSequenceRegions({
+        itemIndex: targetItemIndex,
+        insertedRegion,
+        insertionLabel,
+        removedRegion,
+      });
 
       if (regions.length > labels.length) {
         const excessRegions = regions.slice(labels.length);
@@ -160,6 +258,8 @@ const KeyPointLabelsModel = types
         result.setValue([sequenceLabel.value]);
         region.updateAppearenceFromState?.();
       });
+
+      self._rebuildSequenceGroupPolygons(targetItemIndex);
     },
 
     onRegionCreated(region, currentLabel) {
@@ -167,6 +267,8 @@ const KeyPointLabelsModel = types
     },
 
     onRegionDelete(region) {
+      if (self._isRebuildingGroups) return;
+
       self.rebalanceSequenceLabels({ removedRegion: region });
     },
   }));

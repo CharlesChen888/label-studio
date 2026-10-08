@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Modal, Table, Tabs } from "antd";
+import { Input, Modal, Table, Tabs } from "antd";
 import { observer } from "mobx-react";
 
 import { Hotkey } from "../../core/Hotkey";
@@ -89,26 +89,51 @@ const GeneralSettings = observer(({ store }) => {
   return (
     <div className={cn("settings").mod(newUI).toClassName()}>
       {editorSettingsKeys.map((obj, index) => {
+        const setting = EditorSettings[obj];
+        const settingType = setting.type ?? "boolean";
+        const isBooleanSetting = settingType === "boolean";
+
         return (
           <label className={cn("settings").elem("field").toClassName()} key={index}>
             <>
               <div className={cn("settings__label").toClassName()}>
                 <div className={cn("settings__label").elem("title").toClassName()}>
-                  {EditorSettings[obj].newUI.title}
-                  {EditorSettings[obj].newUI.tags?.split(",").map((tag) => (
+                  {setting.newUI.title}
+                  {setting.newUI.tags?.split(",").map((tag) => (
                     <SettingsTag key={tag}>{tag}</SettingsTag>
                   ))}
                 </div>
                 <div className={cn("settings__label").elem("description").toClassName()}>
-                  {EditorSettings[obj].newUI.description}
+                  {setting.newUI.description}
                 </div>
               </div>
-              <Toggle
-                key={index}
-                checked={store.settings[obj]}
-                onChange={store.settings[EditorSettings[obj].onChangeEvent]}
-                description={EditorSettings[obj].description}
-              />
+              {isBooleanSetting ? (
+                <Toggle
+                  key={index}
+                  checked={store.settings[obj]}
+                  onChange={store.settings[setting.onChangeEvent]}
+                  description={setting.description}
+                />
+              ) : (
+                <Input
+                  key={index}
+                  type={settingType}
+                  value={store.settings[obj]}
+                  min={setting.min}
+                  max={setting.max}
+                  step={setting.step}
+                  onChange={(event) => {
+                    const rawValue = event.target.value;
+                    const value = settingType === "number" ? Number(rawValue) : rawValue;
+
+                    if (setting.onChangeEvent) {
+                      store.settings[setting.onChangeEvent](value);
+                    } else {
+                      store.settings.setProperty(obj, value);
+                    }
+                  }}
+                />
+              )}
             </>
           </label>
         );

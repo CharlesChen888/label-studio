@@ -36,6 +36,11 @@ const SettingsModel = types
      */
     autoSelectNextLabel: false,
 
+    /**
+     * Number of keypoints per auto-group in sequence grouping mode
+     */
+    keypointSequenceGroupSize: types.optional(types.number, 5),
+
     // select regions after creating them
     selectAfterCreate: false,
 
@@ -164,6 +169,13 @@ const SettingsModel = types
 
     toggleAutoSelectNextLabel() {
       self.autoSelectNextLabel = !self.autoSelectNextLabel;
+    },
+
+    setKeypointSequenceGroupSize(value) {
+      const numericValue = Number(value);
+
+      if (!Number.isFinite(numericValue)) return;
+      self.keypointSequenceGroupSize = Math.max(3, Math.floor(numericValue));
     },
 
     toggleSelectAfterCreate() {

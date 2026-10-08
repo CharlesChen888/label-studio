@@ -54,6 +54,18 @@ export default {
     onChangeEvent: "toggleAutoSelectNextLabel",
     defaultValue: false,
   },
+  keypointSequenceGroupSize: {
+    newUI: {
+      title: "Keypoint sequence group size",
+      description: "Number of points per auto-group when keypoint sequence grouping is enabled",
+    },
+    description: "Points per keypoint group",
+    onChangeEvent: "setKeypointSequenceGroupSize",
+    type: "number",
+    min: 3,
+    step: 1,
+    defaultValue: 5,
+  },
   selectAfterCreate: {
     newUI: {
       title: "Select region after creating it",
