@@ -1,0 +1,152 @@
+title: AP/PA Spine Keypoint Annotation
+type: community
+group: Computer Vision
+order: 10030
+image: /static/templates/spine.png
+details: |
+  <h1>Annotate AP/PA spine vertebral corner keypoints</h1>
+  <dl>
+    <dt>What it does</dt>
+    <dd>Annotate 74 vertebral corner keypoints across C7 through Sacrum on AP/PA X-ray images. Each vertebra is labeled with 4 corner points (Upper-Left, Upper-Right, Lower-Left, Lower-Right), grouped by vertebra level with distinct colors for quick visual identification.</dd>
+    <dt>Keypoints per vertebra</dt>
+    <dd>C7–L5: 4 corners each (UL/UR/DL/DR). Sacrum: 2 points (SUL/SUR). Total 74 labels across 19 groups.</dd>
+    <dt>Color coding</dt>
+    <dd>Each vertebral level is assigned a unique color, forming a rainbow gradient from cervical (red) through thoracic (green/cyan/blue) to lumbar (purple/pink) and sacrum (light pink).</dd>
+  </dl>
+config: |
+  <View>
+    <KeyPointLabels name="kp-1" toName="img-1" sequence="true" autogroup="true">
+      <!-- C7 -->
+      <View>
+        <Label value="C7UL" background="#ef4444" />
+        <Label value="C7UR" background="#ef4444" />
+        <Label value="C7DL" background="#ef4444" />
+        <Label value="C7DR" background="#ef4444" />
+      </View>
+      <!-- T1 -->
+      <View>
+        <Label value="T1UL" background="#f97316" />
+        <Label value="T1UR" background="#f97316" />
+        <Label value="T1DL" background="#f97316" />
+        <Label value="T1DR" background="#f97316" />
+      </View>
+      <!-- T2 -->
+      <View>
+        <Label value="T2UL" background="#f59e0b" />
+        <Label value="T2UR" background="#f59e0b" />
+        <Label value="T2DL" background="#f59e0b" />
+        <Label value="T2DR" background="#f59e0b" />
+      </View>
+      <!-- T3 -->
+      <View>
+        <Label value="T3UL" background="#eab308" />
+        <Label value="T3UR" background="#eab308" />
+        <Label value="T3DL" background="#eab308" />
+        <Label value="T3DR" background="#eab308" />
+      </View>
+      <!-- T4 -->
+      <View>
+        <Label value="T4UL" background="#84cc16" />
+        <Label value="T4UR" background="#84cc16" />
+        <Label value="T4DL" background="#84cc16" />
+        <Label value="T4DR" background="#84cc16" />
+      </View>
+      <!-- T5 -->
+      <View>
+        <Label value="T5UL" background="#22c55e" />
+        <Label value="T5UR" background="#22c55e" />
+        <Label value="T5DL" background="#22c55e" />
+        <Label value="T5DR" background="#22c55e" />
+      </View>
+      <!-- T6 -->
+      <View>
+        <Label value="T6UL" background="#10b981" />
+        <Label value="T6UR" background="#10b981" />
+        <Label value="T6DL" background="#10b981" />
+        <Label value="T6DR" background="#10b981" />
+      </View>
+      <!-- T7 -->
+      <View>
+        <Label value="T7UL" background="#14b8a6" />
+        <Label value="T7UR" background="#14b8a6" />
+        <Label value="T7DL" background="#14b8a6" />
+        <Label value="T7DR" background="#14b8a6" />
+      </View>
+      <!-- T8 -->
+      <View>
+        <Label value="T8UL" background="#06b6d4" />
+        <Label value="T8UR" background="#06b6d4" />
+        <Label value="T8DL" background="#06b6d4" />
+        <Label value="T8DR" background="#06b6d4" />
+      </View>
+      <!-- T9 -->
+      <View>
+        <Label value="T9UL" background="#0ea5e9" />
+        <Label value="T9UR" background="#0ea5e9" />
+        <Label value="T9DL" background="#0ea5e9" />
+        <Label value="T9DR" background="#0ea5e9" />
+      </View>
+      <!-- T10 -->
+      <View>
+        <Label value="T10UL" background="#3b82f6" />
+        <Label value="T10UR" background="#3b82f6" />
+        <Label value="T10DL" background="#3b82f6" />
+        <Label value="T10DR" background="#3b82f6" />
+      </View>
+      <!-- T11 -->
+      <View>
+        <Label value="T11UL" background="#6366f1" />
+        <Label value="T11UR" background="#6366f1" />
+        <Label value="T11DL" background="#6366f1" />
+        <Label value="T11DR" background="#6366f1" />
+      </View>
+      <!-- T12 -->
+      <View>
+        <Label value="T12UL" background="#8b5cf6" />
+        <Label value="T12UR" background="#8b5cf6" />
+        <Label value="T12DL" background="#8b5cf6" />
+        <Label value="T12DR" background="#8b5cf6" />
+      </View>
+      <!-- L1 -->
+      <View>
+        <Label value="L1UL" background="#a855f7" />
+        <Label value="L1UR" background="#a855f7" />
+        <Label value="L1DL" background="#a855f7" />
+        <Label value="L1DR" background="#a855f7" />
+      </View>
+      <!-- L2 -->
+      <View>
+        <Label value="L2UL" background="#d946ef" />
+        <Label value="L2UR" background="#d946ef" />
+        <Label value="L2DL" background="#d946ef" />
+        <Label value="L2DR" background="#d946ef" />
+      </View>
+      <!-- L3 -->
+      <View>
+        <Label value="L3UL" background="#ec4899" />
+        <Label value="L3UR" background="#ec4899" />
+        <Label value="L3DL" background="#ec4899" />
+        <Label value="L3DR" background="#ec4899" />
+      </View>
+      <!-- L4 -->
+      <View>
+        <Label value="L4UL" background="#f43f5e" />
+        <Label value="L4UR" background="#f43f5e" />
+        <Label value="L4DL" background="#f43f5e" />
+        <Label value="L4DR" background="#f43f5e" />
+      </View>
+      <!-- L5 -->
+      <View>
+        <Label value="L5UL" background="#fb7185" />
+        <Label value="L5UR" background="#fb7185" />
+        <Label value="L5DL" background="#fb7185" />
+        <Label value="L5DR" background="#fb7185" />
+      </View>
+      <!-- Sacrum -->
+      <View>
+        <Label value="SUL" background="#fda4af" />
+        <Label value="SUR" background="#fda4af" />
+      </View>
+    </KeyPointLabels>
+    <Image name="img-1" value="$img" brightnessControl="true" />
+  </View>
