@@ -36,7 +36,7 @@ import ControlBase from "./Base";
  * @param {pixel|none} [snap=none]       - Snap keypoint to image pixels
  * @param {boolean} [sequence=false]      - Enable keypoint sequence mode with ordered auto-labeling and relabel on insert/delete
  * @param {boolean} [autogroup=false]     - Enable automatic grouping of sequence keypoints into polygon regions
- * @param {number} [groupSize=3]          - Fallback group size when auto grouping is enabled and no UI override is set
+ * @param {number} [groupSize=4]          - Fallback group size when auto grouping is enabled and no UI override is set
  *
  */
 

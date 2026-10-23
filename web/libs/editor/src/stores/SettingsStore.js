@@ -39,7 +39,7 @@ const SettingsModel = types
     /**
      * Number of keypoints per auto-group in sequence grouping mode
      */
-    keypointSequenceGroupSize: types.optional(types.number, 5),
+    keypointSequenceGroupSize: types.optional(types.number, 4),
 
     // select regions after creating them
     selectAfterCreate: false,

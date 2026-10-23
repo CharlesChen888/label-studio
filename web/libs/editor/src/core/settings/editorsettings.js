@@ -67,7 +67,7 @@ export default {
     max: 50,
     step: 1,
     width: "60px",
-    defaultValue: 5,
+    defaultValue: 4,
   },
   selectAfterCreate: {
     newUI: {
