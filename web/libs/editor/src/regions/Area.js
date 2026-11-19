@@ -10,6 +10,7 @@ import { AudioRegionModel } from "./AudioRegion";
 import { PolygonRegionModel } from "./PolygonRegion";
 import { VectorRegionModel } from "./VectorRegion";
 import { CircleRegionModel } from "./CircleRegion";
+import { LineRegionModel } from "./LineRegion";
 import { EllipseRegionModel } from "./EllipseRegion";
 import { RichTextRegionModel } from "./RichTextRegion";
 import { BrushRegionModel } from "./BrushRegion";
@@ -101,6 +102,7 @@ const Area = types.union(
   RichTextRegionModel,
   KeyPointRegionModel,
   CircleRegionModel,
+  LineRegionModel,
   EllipseRegionModel,
   PolygonRegionModel,
   VectorRegionModel,

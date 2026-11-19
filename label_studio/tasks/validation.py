@@ -31,6 +31,7 @@ _DATA_TYPES = {
     'Labels': [str, list],
     'BrushLabels': [str, list],
     'CircleLabels': [str, list],
+    'LineLabels': [str, list],
     'EllipseLabels': [str, list],
     'HyperTextLabels': [str, list],
     'KeyPointLabels': [str, list],

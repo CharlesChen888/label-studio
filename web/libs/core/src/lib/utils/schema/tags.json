@@ -1348,6 +1348,129 @@
       }
     }
   },
+  "Line": {
+    "name": "Line",
+    "description": "The `Line` tag adds a two-point line segment to an image. Both endpoints are shown with short perpendicular caps.\n\nUse with the following data types: image.",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of the element",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of the image to label",
+        "type": "string",
+        "required": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of line",
+        "type": "float",
+        "required": false,
+        "default": 0.6
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Stroke color in hexadecimal",
+        "type": "string",
+        "required": false,
+        "default": "#f48a42"
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of the line",
+        "type": "number",
+        "required": false,
+        "default": 2
+      },
+      "snap": {
+        "name": "snap",
+        "description": "Snap endpoints to image pixels",
+        "type": ["pixel", "none"],
+        "required": false,
+        "default": "none"
+      },
+      "smart": {
+        "name": "smart",
+        "description": "Show smart tool for interactive pre-annotations",
+        "type": ["true", "false"],
+        "required": false
+      },
+      "smartOnly": {
+        "name": "smartOnly",
+        "description": "Only show smart tool for interactive pre-annotations",
+        "type": ["true", "false"],
+        "required": false
+      }
+    }
+  },
+  "LineLabels": {
+    "name": "LineLabels",
+    "description": "The `LineLabels` tag creates labeled two-point line segments with short perpendicular endpoint caps.\n\nUse with the following data types: image.",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of the element",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of the image to label",
+        "type": "string",
+        "required": true
+      },
+      "choice": {
+        "name": "choice",
+        "description": "Configure whether one or multiple labels can be selected",
+        "type": ["single", "multiple"],
+        "required": false,
+        "default": "single"
+      },
+      "maxUsages": {
+        "name": "maxUsages",
+        "description": "Maximum number of times a label can be used per task",
+        "type": "number",
+        "required": false
+      },
+      "showInline": {
+        "name": "showInline",
+        "description": "Show labels in the same visual line",
+        "type": ["true", "false"],
+        "required": false,
+        "default": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of line",
+        "type": "float",
+        "required": false,
+        "default": 0.6
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Stroke color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of the line",
+        "type": "number",
+        "required": false,
+        "default": 2
+      },
+      "snap": {
+        "name": "snap",
+        "description": "Snap endpoints to image pixels",
+        "type": ["pixel", "none"],
+        "required": false,
+        "default": "none"
+      }
+    }
+  },
   "Ellipse": {
     "name": "Ellipse",
     "description": "The `Ellipse` tag is used to add an elliptical bounding box to an image. Use for bounding box image segmentation tasks with ellipses.\n\nUse with the following data types: image.",

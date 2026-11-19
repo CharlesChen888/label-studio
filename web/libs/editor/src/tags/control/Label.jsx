@@ -76,6 +76,7 @@ const Model = types
       Types.tagsTypes([
         "Labels",
         "CircleLabels",
+        "LineLabels",
         "EllipseLabels",
         "RectangleLabels",
         "PolygonLabels",

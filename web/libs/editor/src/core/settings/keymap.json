@@ -252,6 +252,11 @@
     "description": "Select the circle tool"
   },
 
+  "tool:line": {
+    "key": "L",
+    "description": "Select the line tool"
+  },
+
   "tool:eraser": {
     "key": "E",
     "description": "Select the eraser tool"

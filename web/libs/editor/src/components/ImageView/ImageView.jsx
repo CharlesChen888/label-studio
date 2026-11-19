@@ -723,6 +723,8 @@ export default observer(
         undefined,
         "CircleTool",
         "CircleTool-dynamic",
+        "LineTool",
+        "LineTool-dynamic",
         "EllipseTool",
         "EllipseTool-dynamic",
         "RectangleTool",

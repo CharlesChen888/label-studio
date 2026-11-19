@@ -9,6 +9,7 @@ import { AnnotationMixin } from "../../../mixins/AnnotationMixin";
 import { IsReadyWithDepsMixin } from "../../../mixins/IsReadyMixin";
 import { BrushRegionModel } from "../../../regions/BrushRegion";
 import { CircleRegionModel } from "../../../regions/CircleRegion";
+import { LineRegionModel } from "../../../regions/LineRegion";
 import { EllipseRegionModel } from "../../../regions/EllipseRegion";
 import { KeyPointRegionModel } from "../../../regions/KeyPointRegion";
 import { PolygonRegionModel } from "../../../regions/PolygonRegion";
@@ -132,6 +133,8 @@ const IMAGE_CONSTANTS = {
   ellipseLabelsModel: "EllipseLabelsModel",
   circleModel: "CircleModel",
   circleLabelsModel: "CircleLabelsModel",
+  lineModel: "LineModel",
+  lineLabelsModel: "LineLabelsModel",
   brushLabelsModel: "BrushLabelsModel",
   rectanglelabels: "rectanglelabels",
   keypointlabels: "keypointlabels",
@@ -143,6 +146,7 @@ const IMAGE_CONSTANTS = {
   brushModel: "BrushModel",
   ellipselabels: "ellipselabels",
   circlelabels: "circlelabels",
+  linelabels: "linelabels",
 };
 
 const Model = types
@@ -176,6 +180,7 @@ const Model = types
           BrushRegionModel,
           RectRegionModel,
           CircleRegionModel,
+          LineRegionModel,
           EllipseRegionModel,
           PolygonRegionModel,
           VectorRegionModel,
@@ -414,7 +419,8 @@ const Model = types
           item.type === IMAGE_CONSTANTS.brushlabels ||
           item.type === IMAGE_CONSTANTS.bitmasklabels ||
           item.type === IMAGE_CONSTANTS.ellipselabels ||
-          item.type === IMAGE_CONSTANTS.circlelabels
+          item.type === IMAGE_CONSTANTS.circlelabels ||
+          item.type === IMAGE_CONSTANTS.linelabels
         ) {
           returnedControl = item;
         }

@@ -55,6 +55,7 @@ const LabelsRenderer: RendererType = (results, control) => {
 export const renderers: Record<string, RendererType> = {
   labels: LabelsRenderer,
   circlelabels: LabelsRenderer,
+  linelabels: LabelsRenderer,
   ellipselabels: LabelsRenderer,
   polygonlabels: LabelsRenderer,
   vectorlabels: LabelsRenderer,

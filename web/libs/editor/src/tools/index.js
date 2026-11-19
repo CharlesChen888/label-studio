@@ -10,6 +10,7 @@ import { Polygon } from "./Polygon";
 import { Vector } from "./Vector";
 import { Rect, Rect3Point } from "./Rect";
 import { Circle } from "./Circle";
+import { Line } from "./Line";
 import { Ellipse } from "./Ellipse";
 import { Zoom } from "./Zoom";
 import { Rotate } from "./Rotate";
@@ -33,6 +34,7 @@ export {
   Rect,
   Rect3Point,
   Circle,
+  Line,
   Ellipse,
   Brightness,
   Contrast,

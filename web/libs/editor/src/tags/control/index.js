@@ -25,6 +25,8 @@ import { BitmaskModel } from "./Bitmask";
 import { BrushModel } from "./Brush";
 import { CircleLabelsModel } from "./CircleLabels";
 import { CircleModel } from "./Circle";
+import { LineLabelsModel } from "./LineLabels";
+import { LineModel } from "./Line";
 import { EllipseLabelsModel } from "./EllipseLabels";
 import { EllipseModel } from "./Ellipse";
 import { KeyPointLabelsModel } from "./KeyPointLabels";
@@ -62,6 +64,8 @@ export {
   BrushModel,
   CircleLabelsModel,
   CircleModel,
+  LineLabelsModel,
+  LineModel,
   EllipseLabelsModel,
   EllipseModel,
   KeyPointLabelsModel,

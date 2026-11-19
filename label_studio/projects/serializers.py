@@ -226,7 +226,7 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             if li.find_tags_by_class(tag_class):
                 return False
 
-        if any(control.tag in {'Circle', 'CircleLabels'} for control in li.controls):
+        if any(control.tag in {'Circle', 'CircleLabels', 'Line', 'LineLabels'} for control in li.controls):
             return False
 
         # Check perRegion/perItem for expanded list of tags, plus value="no" for Choices/Taxonomy
