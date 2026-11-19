@@ -1227,6 +1227,127 @@
       }
     }
   },
+  "Circle": {
+    "name": "Circle",
+    "description": "The `Circle` tag adds a circular region to an image. The stored x and y values are the circle center and radius is measured as a percentage of the image width.\n\nUse with the following data types: image.",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of the element",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of the image to label",
+        "type": "string",
+        "required": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of circle",
+        "type": "float",
+        "required": false,
+        "default": 0.6
+      },
+      "fillColor": {
+        "name": "fillColor",
+        "description": "Circle fill color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Stroke color in hexadecimal",
+        "type": "string",
+        "required": false,
+        "default": "#f48a42"
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of the stroke",
+        "type": "number",
+        "required": false,
+        "default": 1
+      },
+      "smart": {
+        "name": "smart",
+        "description": "Show smart tool for interactive pre-annotations",
+        "type": ["true", "false"],
+        "required": false
+      },
+      "smartOnly": {
+        "name": "smartOnly",
+        "description": "Only show smart tool for interactive pre-annotations",
+        "type": ["true", "false"],
+        "required": false
+      }
+    }
+  },
+  "CircleLabels": {
+    "name": "CircleLabels",
+    "description": "The `CircleLabels` tag creates labeled circular regions. The center is stored as x and y, and radius is stored as a percentage of the image width.\n\nUse with the following data types: image.",
+    "attrs": {
+      "name": {
+        "name": "name",
+        "description": "Name of the element",
+        "type": "string",
+        "required": true
+      },
+      "toName": {
+        "name": "toName",
+        "description": "Name of the image to label",
+        "type": "string",
+        "required": true
+      },
+      "choice": {
+        "name": "choice",
+        "description": "Configure whether one or multiple labels can be selected",
+        "type": ["single", "multiple"],
+        "required": false,
+        "default": "single"
+      },
+      "maxUsages": {
+        "name": "maxUsages",
+        "description": "Maximum number of times a label can be used per task",
+        "type": "number",
+        "required": false
+      },
+      "showInline": {
+        "name": "showInline",
+        "description": "Show labels in the same visual line",
+        "type": ["true", "false"],
+        "required": false,
+        "default": true
+      },
+      "opacity": {
+        "name": "opacity",
+        "description": "Opacity of circle",
+        "type": "float",
+        "required": false,
+        "default": 0.6
+      },
+      "fillColor": {
+        "name": "fillColor",
+        "description": "Circle fill color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeColor": {
+        "name": "strokeColor",
+        "description": "Stroke color in hexadecimal",
+        "type": "string",
+        "required": false
+      },
+      "strokeWidth": {
+        "name": "strokeWidth",
+        "description": "Width of stroke",
+        "type": "number",
+        "required": false,
+        "default": 1
+      }
+    }
+  },
   "Ellipse": {
     "name": "Ellipse",
     "description": "The `Ellipse` tag is used to add an elliptical bounding box to an image. Use for bounding box image segmentation tasks with ellipses.\n\nUse with the following data types: image.",

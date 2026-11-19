@@ -119,6 +119,12 @@ const NodeViews: Record<string, NodeViewProps> = {
     altIcon: IconPolygonToolSmart,
   },
 
+  CircleRegionModel: {
+    name: "Circle",
+    icon: IconCircleTool,
+    altIcon: IconCircleToolSmart,
+  },
+
   EllipseRegionModel: {
     name: "Ellipse",
     icon: IconCircleTool,

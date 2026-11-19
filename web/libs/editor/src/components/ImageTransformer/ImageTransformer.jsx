@@ -198,7 +198,9 @@ export default class TransformerComponent extends Component {
           }}
           resizeEnabled={true}
           ignoreStroke={true}
-          keepRatio={this.props.singleNodeMode !== true}
+          keepRatio={
+            this.props.singleNodeMode !== true || this.props.selectedShapes?.every((shape) => shape.keepRatio === true)
+          }
           useSingleNodeRotation={this.props.useSingleNodeRotation}
           rotateEnabled={this.props.rotateEnabled}
           borderDash={[3, 1]}
@@ -250,7 +252,9 @@ export default class TransformerComponent extends Component {
           }}
           resizeEnabled={true}
           ignoreStroke={true}
-          keepRatio={this.props.singleNodeMode !== true}
+          keepRatio={
+            this.props.singleNodeMode !== true || this.props.selectedShapes?.every((shape) => shape.keepRatio === true)
+          }
           useSingleNodeRotation={this.props.useSingleNodeRotation}
           rotateEnabled={this.props.rotateEnabled}
           borderDash={[3, 1]}

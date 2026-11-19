@@ -23,6 +23,8 @@ import { BrushLabelsModel } from "./BrushLabels";
 import { BitmaskLabelsModel } from "./BitmaskLabels";
 import { BitmaskModel } from "./Bitmask";
 import { BrushModel } from "./Brush";
+import { CircleLabelsModel } from "./CircleLabels";
+import { CircleModel } from "./Circle";
 import { EllipseLabelsModel } from "./EllipseLabels";
 import { EllipseModel } from "./Ellipse";
 import { KeyPointLabelsModel } from "./KeyPointLabels";
@@ -58,6 +60,8 @@ export {
   VideoRectangleModel,
   BrushLabelsModel,
   BrushModel,
+  CircleLabelsModel,
+  CircleModel,
   EllipseLabelsModel,
   EllipseModel,
   KeyPointLabelsModel,

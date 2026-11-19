@@ -721,6 +721,8 @@ export default observer(
       const selectedTool = item.getToolsManager().findSelectedTool();
       const eligibleToolForDeselect = [
         undefined,
+        "CircleTool",
+        "CircleTool-dynamic",
         "EllipseTool",
         "EllipseTool-dynamic",
         "RectangleTool",

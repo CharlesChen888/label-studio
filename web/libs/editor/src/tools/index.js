@@ -9,6 +9,7 @@ import { KeyPoint } from "./KeyPoint";
 import { Polygon } from "./Polygon";
 import { Vector } from "./Vector";
 import { Rect, Rect3Point } from "./Rect";
+import { Circle } from "./Circle";
 import { Ellipse } from "./Ellipse";
 import { Zoom } from "./Zoom";
 import { Rotate } from "./Rotate";
@@ -31,6 +32,7 @@ export {
   VideoKeyPoint,
   Rect,
   Rect3Point,
+  Circle,
   Ellipse,
   Brightness,
   Contrast,

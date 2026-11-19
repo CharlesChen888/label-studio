@@ -141,6 +141,7 @@ const _detect = (region) => {
         : DEFAULT_BBOX;
     }
     case "rectangleregion":
+    case "circleregion":
     case "ellipseregion":
     case "polygonregion":
     case "vectorregion":

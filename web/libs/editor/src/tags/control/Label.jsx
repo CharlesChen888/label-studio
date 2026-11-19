@@ -75,6 +75,7 @@ const Model = types
     parentTypes: types.late(() =>
       Types.tagsTypes([
         "Labels",
+        "CircleLabels",
         "EllipseLabels",
         "RectangleLabels",
         "PolygonLabels",

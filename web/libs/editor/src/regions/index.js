@@ -10,6 +10,7 @@ import { PolygonPoint, PolygonPointView } from "./PolygonPoint";
 import { HtxPolygon, PolygonRegionModel } from "./PolygonRegion";
 import { HtxVector, VectorRegionModel } from "./VectorRegion";
 import { HtxRectangle, RectRegionModel } from "./RectRegion";
+import { CircleRegionModel, HtxCircle } from "./CircleRegion";
 import { EllipseRegionModel, HtxEllipse } from "./EllipseRegion";
 import { HtxTextAreaRegion, TextAreaRegionModel } from "./TextAreaRegion";
 import { RichTextRegionModel } from "./RichTextRegion";
@@ -23,6 +24,7 @@ const AllRegionsType = types.union(
   AudioRegionModel,
   BrushRegionModel,
   BitmaskRegionModel,
+  CircleRegionModel,
   EllipseRegionModel,
   TimeSeriesRegionModel,
   KeyPointRegionModel,
@@ -45,9 +47,11 @@ export {
   AllRegionsType,
   AudioRegionModel,
   BrushRegionModel,
+  CircleRegionModel,
   EllipseRegionModel,
   HtxBrush,
   HtxBitmask,
+  HtxCircle,
   HtxEllipse,
   HtxKeyPoint,
   HtxPolygon,
