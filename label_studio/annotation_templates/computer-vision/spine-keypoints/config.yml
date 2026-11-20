@@ -8,8 +8,12 @@ details: |
   <dl>
     <dt>What it does</dt>
     <dd>Annotate 74 vertebral corner keypoints across C7 through Sacrum on AP/PA X-ray images. Each vertebra is labeled with 4 corner points (Upper-Left, Upper-Right, Lower-Left, Lower-Right), grouped by vertebra level with distinct colors for quick visual identification.</dd>
+    <dt>Additional keypoints</dt>
+      <dd>4 independent keypoints (C7-Anterior, T1-Anterior, L5-Posterior, Sacrum-Posterior) that are not grouped, not connected into polygons, and can be annotated in any order.</dd>
     <dt>Keypoints per vertebra</dt>
     <dd>C7–L5: 4 corners each (UL/UR/DL/DR). Sacrum: 2 points (SUL/SUR). Total 74 labels across 19 groups.</dd>
+    <dt>Additional standalone keypoints</dt>
+    <dd>4 independent keypoints (C7-Anterior, T1-Anterior, L5-Posterior, Sacrum-Posterior) that are not grouped and not connected into polygons.</dd>
     <dt>Color coding</dt>
     <dd>Each vertebral level is assigned a unique color, forming a rainbow gradient from cervical (red) through thoracic (green/cyan/blue) to lumbar (purple/pink) and sacrum (light pink).</dd>
   </dl>
@@ -148,5 +152,18 @@ config: |
         <Label value="SUR" background="#fda4af" />
       </View>
     </KeyPointLabels>
+    <!-- Independent keypoints - not grouped, not sequence-limited, one use per label -->
+    <KeyPointLabels name="kp-2" toName="img-1" maxUsages="1">
+      <Label value="C7-Anterior" background="#ef4444" />
+      <Label value="T1-Anterior" background="#f97316" />
+      <Label value="L5-Posterior" background="#f43f5e" />
+      <Label value="Sacrum-Posterior" background="#fda4af" />
+    </KeyPointLabels>
+    <!-- Circles - one use per circle label -->
+    <CircleLabels name="circle-1" toName="img-1" maxUsages="1">
+      <Label value="Vertebra-Body" background="#3b82f6" />
+      <Label value="Pedicle" background="#8b5cf6" />
+      <Label value="Transverse-Process" background="#ec4899" />
+    </CircleLabels>
     <Image name="img-1" value="$img" brightnessControl="true" />
   </View>
