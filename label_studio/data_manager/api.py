@@ -739,6 +739,11 @@ class ProjectActionsAPI(APIView):
         # perform action and return the result dict
         kwargs = {'request': request, 'prepare_params': prepare_params}
         result = perform_action(action_id, project, queryset, request.user, **kwargs)
+        
+        # Handle case where result is None (e.g., when start_job_async_or_sync returns None)
+        if result is None:
+            result = {'response_code': 200, 'detail': 'Action completed successfully'}
+        
         code = result.pop('response_code', 200)
 
         return Response(result, status=code)
