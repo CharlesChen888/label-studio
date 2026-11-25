@@ -26,6 +26,7 @@ from rest_framework import generics, viewsets
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from tasks.image_flip import flip_task_image
 from tasks.models import Annotation, AnnotationDraft, Comment, Prediction, Task
 from tasks.openapi_schema import (
     annotation_request_schema,
@@ -631,6 +632,39 @@ class TaskAPI(generics.RetrieveUpdateDestroyAPIView):
     @extend_schema(exclude=True)
     def put(self, request, *args, **kwargs):
         return super(TaskAPI, self).put(request, *args, **kwargs)
+
+
+class TaskFlipImageAPI(generics.GenericAPIView):
+    permission_required = ViewClassPermission(POST=all_permissions.tasks_create)
+
+    def get_queryset(self):
+        return Task.objects.filter(project__organization=self.request.user.active_organization).select_related(
+            'project', 'file_upload'
+        )
+
+    @extend_schema(exclude=True)
+    def post(self, request, pk):
+        task = self.get_object()
+        new_task, _, download_url = flip_task_image(
+            task=task,
+            user=request.user,
+            direction=request.data.get('direction'),
+            data_field=request.data.get('data_field'),
+            item_index=request.data.get('item_index'),
+        )
+        emit_webhooks_for_instance(
+            request.user.active_organization,
+            task.project,
+            WebhookAction.TASKS_CREATED,
+            [new_task],
+        )
+        return Response(
+            {
+                'task': TaskSimpleSerializer(new_task, context={'request': request}).data,
+                'download_url': download_url,
+            },
+            status=201,
+        )
 
 
 @method_decorator(

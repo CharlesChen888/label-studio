@@ -207,6 +207,13 @@ class MLApi(BaseHTTPAPI):
             return self._request('train', request, verbose=False, timeout=TIMEOUT_PREDICT)
 
     def _prep_prediction_req(self, tasks, project, context=None):
+        tasks = [dict(task) for task in tasks]
+        for task in tasks:
+            meta = task.get('meta')
+            image_flip = meta.get('image_flip', {}) if isinstance(meta, dict) else {}
+            if isinstance(image_flip, dict) and image_flip.get('download_url'):
+                task['download_url'] = image_flip['download_url']
+
         request = {
             'tasks': tasks,
             'project': self._create_project_uid(project),

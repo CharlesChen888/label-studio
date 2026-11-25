@@ -643,6 +643,8 @@ const Model = types
 
       if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env), "RotateTool");
 
+      manager.addTool("FlipTool", Tools.Flip.create({}, env), "FlipTool");
+
       createImageEntities();
     }
 

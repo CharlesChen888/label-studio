@@ -1,12 +1,18 @@
 import unittest
+from io import BytesIO
 from unittest.mock import patch
 
 from core.feature_flags import flag_set
+from data_import.models import FileUpload
+from django.core.files.base import ContentFile
+from ml.api_connector import MLApi
 from organizations.models import OrganizationMember, RoleChoice
 from organizations.tests.factories import OrganizationFactory
+from PIL import Image
 from projects.models import Project
 from projects.tests.factories import ProjectFactory
 from rest_framework.test import APITestCase
+from tasks.models import Task
 from tasks.tests.factories import AnnotationFactory, CommentFactory, PredictionFactory, TaskFactory
 from users.tests.factories import UserFactory
 
@@ -60,6 +66,59 @@ class TestTaskAPI(APITestCase):
             'last_submitted_comment_at': None,
             'unresolved_comment_count': 0,
         }
+
+    def test_flip_image_creates_local_task(self):
+        source = BytesIO()
+        image = Image.new('RGB', (2, 2))
+        pixels = [(255, 0, 0), (0, 0, 255), (0, 255, 0), (255, 255, 0)]
+        image.putdata(pixels)
+        image.save(source, format='PNG')
+        upload = FileUpload.objects.create(
+            user=self.user,
+            project=self.project,
+            file=ContentFile(source.getvalue(), name='original.png'),
+        )
+        task = TaskFactory(project=self.project, data={'image': upload.url}, file_upload=upload)
+        self.client.force_authenticate(user=self.user)
+        expectations = {
+            'horizontal': [pixels[1], pixels[0], pixels[3], pixels[2]],
+            'vertical': [pixels[2], pixels[3], pixels[0], pixels[1]],
+        }
+
+        for direction, expected_pixels in expectations.items():
+            with self.subTest(direction=direction):
+                response = self.client.post(
+                    f'/api/tasks/{task.id}/flip-image/',
+                    data={'direction': direction, 'data_field': 'image'},
+                    format='json',
+                )
+
+                assert response.status_code == 201
+                new_task = Task.objects.get(id=response.json()['task']['id'])
+                assert new_task.id != task.id
+                assert new_task.file_upload is not None
+                assert new_task.meta['image_flip']['source_task_id'] == task.id
+                assert new_task.meta['image_flip']['download_url'] == response.json()['download_url']
+                new_task.file_upload.file.open('rb')
+                try:
+                    with Image.open(new_task.file_upload.file) as flipped:
+                        assert list(flipped.getdata()) == expected_pixels
+                finally:
+                    new_task.file_upload.file.close()
+
+    def test_prediction_request_adds_download_url_only_for_flipped_tasks(self):
+        api = MLApi(url='http://ml-backend.example')
+        regular = {'id': 1, 'data': {'image': 'regular.png'}, 'meta': {}}
+        flipped = {
+            'id': 2,
+            'data': {'image': 'flipped.png'},
+            'meta': {'image_flip': {'download_url': 'http://label-studio.test/data/flipped.png'}},
+        }
+
+        request = api._prep_prediction_req([regular, flipped], self.project)
+
+        assert 'download_url' not in request['tasks'][0]
+        assert request['tasks'][1]['download_url'] == 'http://label-studio.test/data/flipped.png'
 
     def test_patch_task(self):
         task = TaskFactory(project=self.project, data={'text': 'test'})

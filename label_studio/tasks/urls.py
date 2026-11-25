@@ -14,6 +14,7 @@ _api_urlpatterns = [
     # CRUD
     path('', api.TaskListAPI.as_view(), name='task-list'),
     path('<int:pk>/', api.TaskAPI.as_view(), name='task-detail'),
+    path('<int:pk>/flip-image/', api.TaskFlipImageAPI.as_view(), name='task-flip-image'),
     path('<int:pk>/annotations/', api.AnnotationsListAPI.as_view(), name='task-annotations'),
     path('<int:pk>/drafts', api.AnnotationDraftListAPI.as_view(), name='task-drafts'),
     path(

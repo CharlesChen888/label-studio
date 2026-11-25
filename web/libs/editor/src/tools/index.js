@@ -14,6 +14,7 @@ import { Line } from "./Line";
 import { Ellipse } from "./Ellipse";
 import { Zoom } from "./Zoom";
 import { Rotate } from "./Rotate";
+import { Flip } from "./Flip";
 import { Brightness } from "./Brightness";
 import { Contrast } from "./Contrast";
 import { MagicWand } from "./MagicWand";
@@ -39,6 +40,7 @@ export {
   Brightness,
   Contrast,
   Rotate,
+  Flip,
   Zoom,
   MagicWand,
   Selection,
