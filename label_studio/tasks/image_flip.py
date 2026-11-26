@@ -100,16 +100,25 @@ def _flip_image(source, direction):
             normalized = ImageOps.exif_transpose(image)
             flipped = normalized.transpose(FLIP_DIRECTIONS[direction])
             image_format = image.format or 'PNG'
-            extension = next(
-                (suffix for suffix, registered_format in Image.registered_extensions().items() if registered_format == image_format),
-                '.png',
-            )
             output = BytesIO()
             flipped.save(output, format=image_format)
     except (OSError, ValueError) as exc:
         raise ValidationError(f'The selected file is not a supported image: {exc}') from exc
 
-    return output.getvalue(), extension.lower()
+    return output.getvalue(), image_format
+
+
+def _original_image_extension(value, image_format):
+    parsed = urlparse(value)
+    source_path = parse_qs(parsed.query).get('filepath', [parsed.path])[0]
+    extension = os.path.splitext(unquote(source_path))[1]
+    if extension:
+        return extension.lower()
+
+    return next(
+        (suffix for suffix, registered_format in Image.registered_extensions().items() if registered_format == image_format),
+        '.png',
+    ).lower()
 
 
 def flip_task_image(task, user, direction, data_field, item_index=None):
@@ -121,9 +130,12 @@ def flip_task_image(task, user, direction, data_field, item_index=None):
     original_data = deepcopy(task.data)
     selected, _ = _replace_image_value(original_data, data_field, item_index, None)
     source = _read_image_bytes(task, selected)
-    content, extension = _flip_image(source, direction)
+    content, image_format = _flip_image(source, direction)
+    extension = _original_image_extension(selected, image_format)
 
-    stem = os.path.splitext(os.path.basename(unquote(urlparse(selected).path)))[0] or f'task-{task.id}'
+    parsed_selected = urlparse(selected)
+    source_path = parse_qs(parsed_selected.query).get('filepath', [parsed_selected.path])[0]
+    stem = os.path.splitext(os.path.basename(unquote(source_path)))[0] or f'task-{task.id}'
     filename = f'{stem}-{direction}-flip{extension}'
     upload = FileUpload.objects.create(user=user, project=task.project, file=ContentFile(content, name=filename))
     download_url = urljoin(settings.HOSTNAME or f'http://localhost:{settings.INTERNAL_PORT}', upload.url)

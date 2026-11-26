@@ -69,20 +69,23 @@ class TestTaskAPI(APITestCase):
 
     def test_flip_image_creates_local_task(self):
         source = BytesIO()
-        image = Image.new('RGB', (2, 2))
-        pixels = [(255, 0, 0), (0, 0, 255), (0, 255, 0), (255, 255, 0)]
-        image.putdata(pixels)
-        image.save(source, format='PNG')
+        image = Image.new('RGB', (20, 20))
+        colors = {'red': (255, 0, 0), 'blue': (0, 0, 255), 'green': (0, 255, 0), 'yellow': (255, 255, 0)}
+        for box, color in zip(((0, 0, 10, 10), (10, 0, 20, 10), (0, 10, 10, 20), (10, 10, 20, 20)), colors.values()):
+            for x in range(box[0], box[2]):
+                for y in range(box[1], box[3]):
+                    image.putpixel((x, y), color)
+        image.save(source, format='JPEG', quality=95)
         upload = FileUpload.objects.create(
             user=self.user,
             project=self.project,
-            file=ContentFile(source.getvalue(), name='original.png'),
+            file=ContentFile(source.getvalue(), name='original.jpg'),
         )
         task = TaskFactory(project=self.project, data={'image': upload.url}, file_upload=upload)
         self.client.force_authenticate(user=self.user)
         expectations = {
-            'horizontal': [pixels[1], pixels[0], pixels[3], pixels[2]],
-            'vertical': [pixels[2], pixels[3], pixels[0], pixels[1]],
+            'horizontal': [colors['blue'], colors['red'], colors['yellow'], colors['green']],
+            'vertical': [colors['green'], colors['yellow'], colors['red'], colors['blue']],
         }
 
         for direction, expected_pixels in expectations.items():
@@ -97,12 +100,17 @@ class TestTaskAPI(APITestCase):
                 new_task = Task.objects.get(id=response.json()['task']['id'])
                 assert new_task.id != task.id
                 assert new_task.file_upload is not None
+                assert new_task.file_upload.file.name.endswith('.jpg')
                 assert new_task.meta['image_flip']['source_task_id'] == task.id
                 assert new_task.meta['image_flip']['download_url'] == response.json()['download_url']
                 new_task.file_upload.file.open('rb')
                 try:
                     with Image.open(new_task.file_upload.file) as flipped:
-                        assert list(flipped.getdata()) == expected_pixels
+                        assert flipped.format == 'JPEG'
+                        sample_points = [(5, 5), (15, 5), (5, 15), (15, 15)]
+                        for point, expected in zip(sample_points, expected_pixels):
+                            actual = flipped.getpixel(point)
+                            assert tuple(channel > 128 for channel in actual) == tuple(channel > 128 for channel in expected)
                 finally:
                     new_task.file_upload.file.close()
 
