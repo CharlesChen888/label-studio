@@ -650,6 +650,7 @@ class TaskFlipImageAPI(generics.GenericAPIView):
             user=request.user,
             direction=request.data.get('direction'),
             data_field=request.data.get('data_field'),
+            source_url=request.data.get('source_url'),
             item_index=request.data.get('item_index'),
         )
         emit_webhooks_for_instance(

@@ -1,6 +1,7 @@
+import base64
 import unittest
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from core.feature_flags import flag_set
 from data_import.models import FileUpload
@@ -113,6 +114,30 @@ class TestTaskAPI(APITestCase):
                             assert tuple(channel > 128 for channel in actual) == tuple(channel > 128 for channel in expected)
                 finally:
                     new_task.file_upload.file.close()
+
+    def test_flip_image_from_s3_storage(self):
+        source = BytesIO()
+        Image.new('RGB', (2, 1), color=(255, 0, 0)).save(source, format='PNG')
+        source_uri = 's3://minio-bucket/photos/original.png'
+        encoded_uri = base64.urlsafe_b64encode(source_uri.encode()).decode()
+        source_url = f'http://localhost:8080/tasks/resolve/?fileuri={encoded_uri}'
+        task = TaskFactory(project=self.project, data={'payload': {'photo': source_uri}})
+        storage = MagicMock()
+        storage.get_bytes_stream.return_value = (BytesIO(source.getvalue()), 'image/png', {'ContentLength': source.tell()})
+
+        self.client.force_authenticate(user=self.user)
+        with patch('io_storages.functions.get_storage_by_url', return_value=storage):
+            response = self.client.post(
+                f'/api/tasks/{task.id}/flip-image/',
+                data={'direction': 'horizontal', 'data_field': 'img', 'source_url': source_url},
+                format='json',
+            )
+
+        assert response.status_code == 201
+        storage.get_bytes_stream.assert_called_once_with(source_uri)
+        new_task = Task.objects.get(id=response.json()['task']['id'])
+        assert new_task.file_upload.file.name.endswith('.png')
+        assert new_task.data['payload']['photo'].endswith('.png')
 
     def test_prediction_request_adds_download_url_only_for_flipped_tasks(self):
         api = MLApi(url='http://ml-backend.example')

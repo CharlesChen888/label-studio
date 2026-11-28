@@ -58,6 +58,7 @@ const _Tool = types
           body: JSON.stringify({
             direction,
             data_field: dataField,
+            source_url: image.currentImageEntity?.src,
             item_index: image.multiImage ? image.currentImage : undefined,
           }),
         });
